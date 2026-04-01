@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://lost-and-found-bf9ae.web.app", "http://localhost:5173"],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeaders": ["Content-Type", "Authorization", "Content-Length", "User-Agent", "x-goog-resumable"]
+  }
+]
