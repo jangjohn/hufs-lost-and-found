@@ -1,3 +1,4 @@
+import { CATEGORIES, LOCATIONS } from '../lib/types';
 import type { ItemCategory, ItemType, SearchMode } from '../lib/types';
 
 interface BoardFiltersProps {
@@ -22,30 +23,6 @@ interface BoardFiltersProps {
   onToggleSearchMode: () => void;
   onResetDateFilter: () => void;
 }
-
-const categories: { value: ItemCategory; label: string }[] = [
-  { value: 'wallet', label: '지갑' },
-  { value: 'phone', label: '휴대폰' },
-  { value: 'card', label: '카드' },
-  { value: 'key', label: '열쇠' },
-  { value: 'bag', label: '가방' },
-  { value: 'book', label: '책' },
-  { value: 'electronics', label: '전자기기' },
-  { value: 'clothing', label: '의류' },
-  { value: 'other', label: '기타' },
-];
-
-const locations = [
-  '학생식당',
-  '도서관',
-  '공학관',
-  '인문관',
-  '교학관A',
-  '교학관B',
-  '강의동',
-  '운동장',
-  '기숙사',
-];
 
 function getDateLabel(startDate: string, endDate: string) {
   if (startDate && endDate) return `${startDate} ~ ${endDate}`;
@@ -105,7 +82,7 @@ export default function BoardFilters({
             className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
           >
             <option value="">전체 분류</option>
-            {categories.map((item) => (
+            {CATEGORIES.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -118,7 +95,7 @@ export default function BoardFilters({
             className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white"
           >
             <option value="">전체 장소</option>
-            {locations.map((loc) => (
+            {LOCATIONS.map((loc) => (
               <option key={loc} value={loc}>
                 {loc}
               </option>
