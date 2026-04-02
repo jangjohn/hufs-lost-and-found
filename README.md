@@ -88,8 +88,8 @@ firebase deploy --only functions
 
 ## 팀 구성
 
-| 이름 | 역할 |
+| 멤버 | 역할 |
 |------|------|
-| 장준위 | 아키텍처, Firebase 인프라, Frontend, Cloud Functions (trigger/notification/cleanup/verify), 배포 |
-| 권성재 | AI 매칭 (OpenAI + Pinecone), Cloud Vision, matchItem/analyzeImage 구현 |
-| 박성재 | 통합 테스트, 테스트 데이터, 발표 자료, 데모 영상 |
+| [@jangjohn](https://github.com/jangjohn) | 아키텍처, Firebase 인프라, Frontend, Cloud Functions, 배포 |
+| [@PSCHEDULE](https://github.com/PSCHEDULE) | AI 매칭 (OpenAI + Pinecone), Cloud Vision |
+| [@azteccamera](https://github.com/azteccamera) | Frontend 기능 개발, 테스트, 발표 자료 |
