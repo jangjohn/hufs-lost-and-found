@@ -22,7 +22,7 @@ import { Pinecone } from '@pinecone-database/pinecone';
 const SIMILARITY_THRESHOLD = 0.75; // 유사도 임계값 (0~1)
 const TOP_K = 5;                   // 상위 K개 결과 검색
 const EMBEDDING_MODEL = 'text-embedding-3-small';
-const EMBEDDING_DIMENSIONS = 256;
+const EMBEDDING_DIMENSIONS = 384;
 const MATCHED_TOPIC = 'item-matched';
 
 // ─── 클라이언트 초기화 ──────────────────────────────────
@@ -96,19 +96,21 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
 
     // 3) Pinecone 인덱스에 벡터 저장
     const index = pinecone.index(process.env.PINECONE_INDEX!);
-    await index.upsert([
-      {
-        id: itemId,
-        values: vector,
-        metadata: {
-          type: itemData.type,
-          category: itemData.category,
-          location: itemData.location,
-          status: itemData.status,
-          userId: itemData.userId,
+    await index.upsert({
+      records: [
+        {
+          id: itemId,
+          values: vector,
+          metadata: {
+            type: itemData.type,
+            category: itemData.category,
+            location: itemData.location,
+            status: itemData.status,
+            userId: itemData.userId,
+          },
         },
-      },
-    ]);
+      ],
+    });
     logger.info(`[matchItem] Vector stored in Pinecone for item: ${itemId}`);
 
     // Firestore에 embeddingId 업데이트
