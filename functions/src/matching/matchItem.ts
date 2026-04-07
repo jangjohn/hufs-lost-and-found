@@ -29,15 +29,6 @@ const MATCHED_TOPIC = 'item-matched'; // Pub/Sub topic for newly created matches
 const db = admin.firestore();
 const pubsub = new PubSub();
 
-// Initialize external AI/vector services
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY!,
-});
-
 /**
  * Builds a concatenated text string from item fields to be used for embedding.
  *
@@ -66,11 +57,12 @@ function buildEmbeddingText(item: FirebaseFirestore.DocumentData): string {
 /**
  * Generates a vector embedding for the given text using OpenAI's embedding model.
  *
+ * @param openai - OpenAI client instance
  * @param text - The text to embed
  * @returns Promise resolving to an array of numbers representing the embedding vector
  * @throws Error if the OpenAI API call fails
  */
-async function createEmbedding(text: string): Promise<number[]> {
+async function createEmbedding(openai: OpenAI, text: string): Promise<number[]> {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
     input: text,
@@ -95,6 +87,14 @@ async function createEmbedding(text: string): Promise<number[]> {
  */
 export const matchItem = onMessagePublished('new-item', async (event) => {
   try {
+    // Lazy initialization: ensures env vars are loaded before client creation
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const pinecone = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY!,
+    });
+
     // Parse the incoming Pub/Sub message
     const message = event.data.message.json as {
       itemId: string;
@@ -122,7 +122,7 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
     const embeddingText = buildEmbeddingText(itemData);
     logger.info(`[matchItem] Embedding text: "${embeddingText.substring(0, 100)}..."`);
 
-    const vector = await createEmbedding(embeddingText);
+    const vector = await createEmbedding(openai, embeddingText);
     logger.info(`[matchItem] Embedding created, dimensions: ${vector.length}`);
 
     // Step 2: Store vector in Pinecone with metadata for filtering
@@ -179,6 +179,7 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
 
     // Step 4: Create match records in Firestore (using batch for efficiency)
     const batch = db.batch();
+    const matchResults: Array<{matchId: string; lostItemId: string; foundItemId: string; similarityScore: number}> = [];
 
     for (const match of matches) {
       const matchedItemId = match.id;
@@ -209,27 +210,24 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
         foundItemId,
         similarityScore,
         status: 'pending',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: new Date(),
       });
 
-      // Publish event so other functions (e.g., notifications) can react
-      await pubsub.topic(MATCHED_TOPIC).publishMessage({
-        json: {
-          matchId: matchRef.id,
-          lostItemId,
-          foundItemId,
-          similarityScore,
-        },
-      });
-
-      logger.info(
-        `[matchItem] Match created: ${matchRef.id} (score: ${similarityScore.toFixed(3)}) ` +
-        `lost=${lostItemId} ↔ found=${foundItemId}`
-      );
+      matchResults.push({ matchId: matchRef.id, lostItemId, foundItemId, similarityScore });
     }
 
+    // Commit batch first, then publish events for data consistency
     await batch.commit();
     logger.info(`[matchItem] All matches committed for item: ${itemId}`);
+
+    // Step 5: Publish match events so other functions (e.g., notifications) can react
+    for (const result of matchResults) {
+      await pubsub.topic(MATCHED_TOPIC).publishMessage({ json: result });
+      logger.info(
+        `[matchItem] Match published: ${result.matchId} (score: ${result.similarityScore.toFixed(3)}) ` +
+        `lost=${result.lostItemId} ↔ found=${result.foundItemId}`
+      );
+    }
   } catch (error) {
     logger.error('[matchItem] Error:', error);
     throw error; // Let Firebase Functions handle retry logic if configured
