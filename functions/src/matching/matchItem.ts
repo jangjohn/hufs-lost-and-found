@@ -18,17 +18,18 @@ import { PubSub } from '@google-cloud/pubsub';
 import OpenAI from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
 
-// ─── 상수 ───────────────────────────────────────────────
-const SIMILARITY_THRESHOLD = 0.75; // 유사도 임계값 (0~1)
-const TOP_K = 5;                   // 상위 K개 결과 검색
+/** Constants */
+const SIMILARITY_THRESHOLD = 0.75; // Minimum cosine similarity score to consider a match
+const TOP_K = 5; // Number of closest vectors to retrieve from Pinecone
 const EMBEDDING_MODEL = 'text-embedding-3-small';
-const EMBEDDING_DIMENSIONS = 384;
-const MATCHED_TOPIC = 'item-matched';
+const EMBEDDING_DIMENSIONS = 384; // Reduced dimensions for cost/performance balance
+const MATCHED_TOPIC = 'item-matched'; // Pub/Sub topic for newly created matches
 
-// ─── 클라이언트 초기화 ──────────────────────────────────
+// Initialize Firebase services
 const db = admin.firestore();
 const pubsub = new PubSub();
 
+// Initialize external AI/vector services
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -37,7 +38,15 @@ const pinecone = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY!,
 });
 
-// ─── 헬퍼: 아이템 텍스트를 임베딩용 문자열로 결합 ─────
+/**
+ * Builds a concatenated text string from item fields to be used for embedding.
+ *
+ * This combines the most semantically relevant fields so the resulting vector
+ * captures the item's identity effectively for similarity search.
+ *
+ * @param item - Firestore document data for an item
+ * @returns A pipe-separated string containing key item attributes
+ */
 function buildEmbeddingText(item: FirebaseFirestore.DocumentData): string {
   const parts: string[] = [];
 
@@ -46,7 +55,7 @@ function buildEmbeddingText(item: FirebaseFirestore.DocumentData): string {
   if (item.category) parts.push(item.category);
   if (item.location) parts.push(item.location);
 
-  // visionLabels가 있으면 함께 포함 (analyzeImage에서 추가)
+  // Vision labels (from image analysis) provide additional context
   if (item.visionLabels && Array.isArray(item.visionLabels)) {
     parts.push(item.visionLabels.join(', '));
   }
@@ -54,7 +63,13 @@ function buildEmbeddingText(item: FirebaseFirestore.DocumentData): string {
   return parts.join(' | ');
 }
 
-// ─── 헬퍼: OpenAI 임베딩 생성 ──────────────────────────
+/**
+ * Generates a vector embedding for the given text using OpenAI's embedding model.
+ *
+ * @param text - The text to embed
+ * @returns Promise resolving to an array of numbers representing the embedding vector
+ * @throws Error if the OpenAI API call fails
+ */
 async function createEmbedding(text: string): Promise<number[]> {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
@@ -62,40 +77,57 @@ async function createEmbedding(text: string): Promise<number[]> {
     dimensions: EMBEDDING_DIMENSIONS,
   });
 
+  // Return only the first embedding (we send single input)
   return response.data[0].embedding;
 }
 
-// ─── 메인 Cloud Function ────────────────────────────────
+/**
+ * Cloud Function triggered by Pub/Sub message on the 'new-item' topic.
+ *
+ * This function:
+ * 1. Embeds the new item using OpenAI
+ * 2. Stores the vector in Pinecone for future similarity searches
+ * 3. Queries Pinecone for similar items of the opposite type (lost ↔ found)
+ * 4. Creates match records in Firestore if similarity exceeds threshold
+ * 5. Publishes match events to trigger downstream notifications/workflows
+ *
+ * @param event - Pub/Sub message event containing the new item details
+ */
 export const matchItem = onMessagePublished('new-item', async (event) => {
   try {
+    // Parse the incoming Pub/Sub message
     const message = event.data.message.json as {
       itemId: string;
-      type: string;
+      type: 'lost' | 'found';
       category: string;
       location: string;
       userId: string;
     };
 
     const { itemId, type } = message;
+
     logger.info(`[matchItem] Processing item: ${itemId}, type: ${type}`);
 
-    // 1) Firestore에서 아이템 전체 데이터 조회
+    // Fetch full item data from Firestore
     const itemDoc = await db.collection('items').doc(itemId).get();
+
     if (!itemDoc.exists) {
       logger.warn(`[matchItem] Item ${itemId} not found in Firestore`);
       return;
     }
+
     const itemData = itemDoc.data()!;
 
-    // 2) 임베딩용 텍스트 생성 → OpenAI 임베딩 호출
+    // Step 1: Build text representation and create embedding
     const embeddingText = buildEmbeddingText(itemData);
     logger.info(`[matchItem] Embedding text: "${embeddingText.substring(0, 100)}..."`);
 
     const vector = await createEmbedding(embeddingText);
     logger.info(`[matchItem] Embedding created, dimensions: ${vector.length}`);
 
-    // 3) Pinecone 인덱스에 벡터 저장
+    // Step 2: Store vector in Pinecone with metadata for filtering
     const index = pinecone.index(process.env.PINECONE_INDEX!);
+
     await index.upsert({
       records: [
         {
@@ -111,12 +143,15 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
         },
       ],
     });
+
     logger.info(`[matchItem] Vector stored in Pinecone for item: ${itemId}`);
 
-    // Firestore에 embeddingId 업데이트
-    await db.collection('items').doc(itemId).update({ embeddingId: itemId });
+    // Update Firestore to mark that this item has been embedded
+    await db.collection('items').doc(itemId).update({
+      embeddingId: itemId,
+    });
 
-    // 4) 반대 타입으로 유사 벡터 검색 (lost ↔ found)
+    // Step 3: Search for potential matches of the opposite type
     const oppositeType = type === 'lost' ? 'found' : 'lost';
 
     const queryResult = await index.query({
@@ -125,10 +160,11 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
       includeMetadata: true,
       filter: {
         type: { $eq: oppositeType },
-        status: { $eq: 'active' },
+        status: { $eq: 'active' }, // Only match against active items
       },
     });
 
+    // Filter matches by similarity threshold
     const matches = queryResult.matches?.filter(
       (m) => (m.score ?? 0) >= SIMILARITY_THRESHOLD
     ) ?? [];
@@ -137,20 +173,22 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
       `[matchItem] Found ${matches.length} matches above threshold (${SIMILARITY_THRESHOLD}) for item: ${itemId}`
     );
 
-    if (matches.length === 0) return;
+    if (matches.length === 0) {
+      return; // No matches found - function ends here
+    }
 
-    // 5) Firestore matches 컬렉션에 결과 저장 + Pub/Sub 발행
+    // Step 4: Create match records in Firestore (using batch for efficiency)
     const batch = db.batch();
 
     for (const match of matches) {
       const matchedItemId = match.id;
       const similarityScore = match.score ?? 0;
 
-      // lost/found 순서 정규화: lostItemId는 항상 lost 타입
+      // Determine which is lost and which is found
       const lostItemId = type === 'lost' ? itemId : matchedItemId;
       const foundItemId = type === 'lost' ? matchedItemId : itemId;
 
-      // 중복 매칭 방지: 같은 쌍이 이미 있는지 확인
+      // Prevent duplicate matches (important for bidirectional triggering)
       const existingMatch = await db
         .collection('matches')
         .where('lostItemId', '==', lostItemId)
@@ -163,7 +201,9 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
         continue;
       }
 
+      // Create new match document
       const matchRef = db.collection('matches').doc();
+
       batch.set(matchRef, {
         lostItemId,
         foundItemId,
@@ -172,7 +212,7 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // Pub/Sub "item-matched" 토픽에 발행 → notifyOnMatch가 처리
+      // Publish event so other functions (e.g., notifications) can react
       await pubsub.topic(MATCHED_TOPIC).publishMessage({
         json: {
           matchId: matchRef.id,
@@ -192,6 +232,6 @@ export const matchItem = onMessagePublished('new-item', async (event) => {
     logger.info(`[matchItem] All matches committed for item: ${itemId}`);
   } catch (error) {
     logger.error('[matchItem] Error:', error);
-    throw error;
+    throw error; // Let Firebase Functions handle retry logic if configured
   }
 });
