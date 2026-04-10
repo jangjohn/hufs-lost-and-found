@@ -15,7 +15,7 @@ export { cleanupExpired } from './cleanup/expireItems';
 export { verifyAnswer } from './verify/checkAnswer';
 
 // Matching (팀원 B 담당) — 구현 완료 후 아래 주석 해제
-// export { matchItem } from './matching/matchItem';
+export { matchItem } from './matching/matchItem';
 
 // Vision (팀원 B 담당) — 구현 완료 후 아래 주석 해제
-// export { analyzeImage } from './vision/analyzeImage';
+export { analyzeImage } from './vision/analyzeImage';
