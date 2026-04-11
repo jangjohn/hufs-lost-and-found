@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { collection, query, where, getDocs, limit, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { getItem } from '../hooks/useFirestore';
 import { useAuth } from '../hooks/useAuth';
@@ -10,27 +10,69 @@ import type { Item, Match } from '../lib/types';
 export default function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [item, setItem] = useState<Item | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [imgIndex, setImgIndex] = useState(0);
+  const [isVerified, setIsVerified] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
+useEffect(() => {
+  if (!id) return;
+
+  (async () => {
+    try {
       const data = await getItem(id);
       setItem(data);
-      setLoading(false);
 
-      // 매칭 결과 조회
       if (data) {
         const field = data.type === 'lost' ? 'lostItemId' : 'foundItemId';
         const q = query(collection(db, 'matches'), where(field, '==', id));
         const snap = await getDocs(q);
         setMatches(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Match));
       }
-    })();
-  }, [id]);
+
+      if (data && user) {
+        const ownershipCheckQuery = query(
+          collection(db, 'ownershipChecks'),
+          where('itemId', '==', id),
+          where('userId', '==', user.uid),
+          limit(1)
+        );
+
+        const ownershipCheckSnap = await getDocs(ownershipCheckQuery);
+        setIsVerified(!ownershipCheckSnap.empty);
+      } else {
+        setIsVerified(false);
+      } 
+    } catch (error) {
+      console.error('PostDetail load error:', error);
+      setIsVerified(false);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [id, user]);
+
+const handleDelete = async () => {
+  if (!id || !item || !user) return;
+
+  const confirmed = window.confirm('이 게시글을 삭제하시겠습니까?');
+  if (!confirmed) return;
+
+  try {
+    setDeleting(true);
+    await deleteDoc(doc(db, 'items', id));
+    alert('게시글이 삭제되었습니다.');
+    navigate('/');
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert('게시글 삭제에 실패했습니다.');
+  } finally {
+    setDeleting(false);
+  }
+};
 
   if (loading) return <p className="text-gray-500 text-sm">로딩 중...</p>;
   if (!item) return <p className="text-gray-500">게시글을 찾을 수 없습니다.</p>;
@@ -88,16 +130,33 @@ export default function PostDetail() {
         <p>날짜: {dateStr}</p>
         <p>작성자: {item.userName}</p>
       </div>
-
+      
       {/* 본인 확인 */}
-      {user && user.uid !== item.userId && item.status === 'active' && (
+      {user && user.uid !== item.userId && item.status === 'active' && !isVerified && (
         <Link
-          to={`/verify/${item.id}`}
-          className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+        to={`/verify/${item.id}`}
+        className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
         >
           본인 확인하기
         </Link>
       )}
+        
+        {user && user.uid !== item.userId && item.status === 'active' && isVerified && (
+          <div className="inline-block bg-green-50 text-green-700 px-4 py-2 rounded-md text-sm">
+            본인 확인이 완료되었습니다.
+          </div>
+        )}
+
+      {/* 삭제 버튼 */}
+      {user && user.uid === item.userId && (
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        className="inline-block bg-red-600 text-white px-4 py-2 rounded-md text-sm hover:bg-red-700 disabled:opacity-50 ml-2"
+      >
+        {deleting ? '삭제 중...' : '삭제하기'}
+      </button>
+    )}
 
       {/* 매칭 결과 */}
       {matches.length > 0 && (

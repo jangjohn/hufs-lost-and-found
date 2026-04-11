@@ -7,10 +7,10 @@ import { getItem } from '../hooks/useFirestore';
 import type { Item } from '../lib/types';
 
 const functions = getFunctions();
-const verifyAnswerFn = httpsCallable<{ itemId: string; answer: string }, { success: boolean }>(
-  functions,
-  'verifyAnswer'
-);
+const verifyAnswerFn = httpsCallable<
+  { itemId: string; answer: string },
+  { success: boolean; ownershipCheckId: string | null }
+>(functions, 'verifyAnswer');
 
 export default function Verify() {
   const { id } = useParams<{ id: string }>();
@@ -36,10 +36,15 @@ export default function Verify() {
       const result = await verifyAnswerFn({ itemId: id, answer });
       if (result.data.success) {
         setMessage('인증에 성공했습니다! 게시자에게 연락 정보가 전달됩니다.');
+        setAnswer('');
+        setTimeout(() => {
+          navigate(`/item/${id}`);
+        }, 1200);
+
       } else {
         setMessage('답변이 일치하지 않습니다. 다시 시도해주세요.');
+        setAnswer('');
       }
-      setAnswer('');
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : '제출에 실패했습니다.';
       setMessage(msg);

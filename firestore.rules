@@ -10,7 +10,7 @@ service cloud.firestore {
           'type', 'status', 'category', 'title', 'description', 'location',
           'lostDate', 'imageUrls', 'visionLabels', 'embeddingId',
           'verificationQ', 'verificationAHash',
-          'userId', 'userName', 'createdAt'
+          'userId', 'userName', 'createdAt', 'expiresAt'
         ]);
       }
 
@@ -30,7 +30,8 @@ service cloud.firestore {
         && request.resource.data.expiresAt == resource.data.expiresAt
         && request.resource.data.verificationAHash == resource.data.verificationAHash;
 
-      allow delete: if false;
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
     }
 
     // matches: 登录可读，只有 admin SDK (Cloud Functions) 可写
@@ -49,6 +50,16 @@ service cloud.firestore {
     match /verificationAttempts/{attemptId} {
       allow read: if request.auth != null
         && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /ownershipChecks/{ownershipCheckId} {
+      allow read: if request.auth != null
+        && (
+          resource.data.userId == request.auth.uid
+          || resource.data.ownerUserId == request.auth.uid
+        );
+      
       allow write: if false;
     }
   }
