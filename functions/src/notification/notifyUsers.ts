@@ -5,27 +5,32 @@ import { logger } from 'firebase-functions';
 const db = admin.firestore();
 const messaging = admin.messaging();
 
-// 무효 FCM 토큰 정리
 async function cleanupInvalidTokens(
   tokens: string[],
   response: admin.messaging.BatchResponse,
   tokenOwners: Map<string, string>
 ) {
   const invalidTokens = new Map<string, string[]>();
-  response.responses.forEach((res, i) => {
-    if (!res.success) {
-      const code = res.error?.code;
-      if (
-        code === 'messaging/invalid-registration-token' ||
-        code === 'messaging/registration-token-not-registered'
-      ) {
-        const uid = tokenOwners.get(tokens[i]);
-        if (uid) {
-          if (!invalidTokens.has(uid)) invalidTokens.set(uid, []);
-          invalidTokens.get(uid)!.push(tokens[i]);
-        }
-      }
+
+  response.responses.forEach((res, index) => {
+    if (res.success) return;
+
+    const code = res.error?.code;
+    if (
+      code !== 'messaging/invalid-registration-token' &&
+      code !== 'messaging/registration-token-not-registered'
+    ) {
+      return;
     }
+
+    const token = tokens[index];
+    const uid = tokenOwners.get(token);
+    if (!uid) return;
+
+    if (!invalidTokens.has(uid)) {
+      invalidTokens.set(uid, []);
+    }
+    invalidTokens.get(uid)!.push(token);
   });
 
   for (const [uid, badTokens] of invalidTokens) {
@@ -36,7 +41,6 @@ async function cleanupInvalidTokens(
   }
 }
 
-// 새 아이템 등록 시 구독자에게 알림
 export const notifyOnNewItem = onMessagePublished('new-item', async (event) => {
   try {
     const data = event.data.message.json as {
@@ -50,14 +54,14 @@ export const notifyOnNewItem = onMessagePublished('new-item', async (event) => {
     logger.info(`Notifying subscribers for new item: ${data.itemId}`);
 
     const usersSnap = await db.collection('users').get();
-    const tokens: string[] = [];
+    const uniqueTokens = new Set<string>();
     const tokenOwners = new Map<string, string>();
 
     for (const userDoc of usersSnap.docs) {
       const user = userDoc.data();
 
       if (userDoc.id === data.userId) continue;
-      if (!user.fcmTokens || user.fcmTokens.length === 0) continue;
+      if (!Array.isArray(user.fcmTokens) || user.fcmTokens.length === 0) continue;
 
       const subscriptions = user.subscriptions ?? [];
       const matched = subscriptions.length === 0 || subscriptions.some(
@@ -66,34 +70,40 @@ export const notifyOnNewItem = onMessagePublished('new-item', async (event) => {
           (!sub.location || sub.location === data.location)
       );
 
-      if (matched) {
-        for (const t of user.fcmTokens) {
-          tokens.push(t);
-          tokenOwners.set(t, userDoc.id);
-        }
+      if (!matched) continue;
+
+      for (const token of user.fcmTokens) {
+        uniqueTokens.add(token);
+        tokenOwners.set(token, userDoc.id);
       }
     }
 
+    const tokens = [...uniqueTokens];
     if (tokens.length === 0) {
       logger.info('No subscribers to notify');
       return;
     }
 
-    const typeLabel = data.type === 'lost' ? '분실물' : '습득물';
+    const itemLabel = data.type === 'lost' ? 'lost item' : 'found item';
     const response = await messaging.sendEachForMulticast({
       tokens,
       notification: {
-        title: `새 ${typeLabel}이 등록되었습니다`,
-        body: `${data.location}에서 새 ${typeLabel}이 등록되었습니다.`,
+        title: `New ${itemLabel} posted`,
+        body: `${data.location} now has a new ${itemLabel} listing.`,
       },
       data: {
         itemId: data.itemId,
         type: data.type,
+        link: `/item/${data.itemId}`,
+      },
+      webpush: {
+        fcmOptions: {
+          link: `/item/${data.itemId}`,
+        },
       },
     });
 
     logger.info(`Sent notifications to ${tokens.length} devices, ${response.successCount} succeeded`);
-
     await cleanupInvalidTokens(tokens, response, tokenOwners);
   } catch (error) {
     logger.error('Error in notifyOnNewItem:', error);
@@ -101,7 +111,6 @@ export const notifyOnNewItem = onMessagePublished('new-item', async (event) => {
   }
 });
 
-// 매칭 발견 시 게시자에게 알림
 export const notifyOnMatch = onMessagePublished('item-matched', async (event) => {
   try {
     const data = event.data.message.json as {
@@ -118,38 +127,48 @@ export const notifyOnMatch = onMessagePublished('item-matched', async (event) =>
       db.collection('items').doc(data.foundItemId).get(),
     ]);
 
-    const tokens: string[] = [];
+    const uniqueTokens = new Set<string>();
     const tokenOwners = new Map<string, string>();
 
     for (const itemDoc of [lostDoc, foundDoc]) {
       if (!itemDoc.exists) continue;
+
       const uid = itemDoc.data()!.userId;
       const userDoc = await db.collection('users').doc(uid).get();
-      if (userDoc.exists) {
-        const fcmTokens = userDoc.data()!.fcmTokens ?? [];
-        for (const t of fcmTokens) {
-          tokens.push(t);
-          tokenOwners.set(t, uid);
-        }
+      if (!userDoc.exists) continue;
+
+      const fcmTokens = userDoc.data()!.fcmTokens ?? [];
+      for (const token of fcmTokens) {
+        uniqueTokens.add(token);
+        tokenOwners.set(token, uid);
       }
     }
 
-    if (tokens.length === 0) return;
+    const tokens = [...uniqueTokens];
+    if (tokens.length === 0) {
+      logger.info('No match recipients to notify');
+      return;
+    }
 
     const score = Math.round(data.similarityScore * 100);
     const response = await messaging.sendEachForMulticast({
       tokens,
       notification: {
-        title: '매칭 결과가 있습니다!',
-        body: `유사도 ${score}%의 매칭이 발견되었습니다.`,
+        title: 'Potential match found',
+        body: `A new match was found with ${score}% similarity.`,
       },
       data: {
         matchId: data.matchId,
+        link: '/matches',
+      },
+      webpush: {
+        fcmOptions: {
+          link: '/matches',
+        },
       },
     });
 
     logger.info(`Sent match notifications to ${tokens.length} devices, ${response.successCount} succeeded`);
-
     await cleanupInvalidTokens(tokens, response, tokenOwners);
   } catch (error) {
     logger.error('Error in notifyOnMatch:', error);
