@@ -1,62 +1,92 @@
-import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { useEffect, useState } from 'react';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SubscriptionManager from '../components/SubscriptionManager';
 import { useAuth } from '../hooks/useAuth';
 import { useNotification } from '../hooks/useNotification';
-import SubscriptionManager from '../components/SubscriptionManager';
+import { db } from '../lib/firebase';
 import type { User } from '../lib/types';
 
 export default function Profile() {
   const { user } = useAuth();
   const { permission, requestPermission } = useNotification(user?.uid);
   const [userData, setUserData] = useState<User | null>(null);
+  const [postedItemsCount, setPostedItemsCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    getDoc(doc(db, 'users', user.uid)).then((snap) => {
-      if (snap.exists()) {
-        setUserData({ uid: snap.id, ...snap.data() } as User);
+
+    (async () => {
+      const [userSnap, postsSnap] = await Promise.all([
+        getDoc(doc(db, 'users', user.uid)),
+        getDocs(query(collection(db, 'items'), where('userId', '==', user.uid))),
+      ]);
+
+      if (userSnap.exists()) {
+        setUserData({ uid: userSnap.id, ...userSnap.data() } as User);
       }
-    });
+      setPostedItemsCount(postsSnap.size);
+      setLoading(false);
+    })();
   }, [user]);
 
   if (!user) return null;
+  if (loading) return <LoadingSpinner label="Loading profile" fullScreen />;
 
   return (
-    <div className="max-w-md">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">프로필</h1>
+    <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="space-y-6">
+        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <span className="inline-flex rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">
+            Account
+          </span>
+          <h1 className="mt-4 text-3xl font-bold text-slate-900">Profile</h1>
+          <div className="mt-6 space-y-3 text-sm text-slate-600">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Name</p>
+              <p className="mt-2 text-base font-medium text-slate-900">{user.displayName ?? 'No display name'}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Email</p>
+              <p className="mt-2 text-base font-medium text-slate-900">{user.email}</p>
+            </div>
+          </div>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-        <p className="text-sm text-gray-700">
-          <span className="font-medium">이름:</span> {user.displayName}
-        </p>
-        <p className="text-sm text-gray-700">
-          <span className="font-medium">이메일:</span> {user.email}
-        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Posted items</p>
+            <p className="mt-3 text-3xl font-bold text-slate-900">{postedItemsCount}</p>
+            <p className="mt-2 text-sm text-slate-500">Total lost or found posts created from this account.</p>
+          </div>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Push notifications</p>
+            <p className="mt-3 text-lg font-semibold text-slate-900">
+              {permission === 'granted' ? 'Enabled' : permission === 'denied' ? 'Blocked' : 'Not enabled'}
+            </p>
+            <p className="mt-2 text-sm text-slate-500">Enable notifications to hear about new relevant posts and match results.</p>
+            {permission !== 'granted' ? (
+              <button
+                onClick={requestPermission}
+                className="mt-4 rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                Enable notifications
+              </button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-        <h2 className="text-sm font-medium text-gray-700 mb-2">푸시 알림</h2>
-        {permission === 'granted' ? (
-          <p className="text-sm text-green-600">알림이 활성화되어 있습니다.</p>
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+        {userData ? (
+          <SubscriptionManager userId={user.uid} subscriptions={userData.subscriptions} />
         ) : (
-          <button
-            onClick={requestPermission}
-            className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700"
-          >
-            알림 허용하기
-          </button>
+          <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+            Profile details are unavailable right now.
+          </div>
         )}
       </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        {userData && (
-          <SubscriptionManager
-            userId={user.uid}
-            subscriptions={userData.subscriptions}
-          />
-        )}
-      </div>
-    </div>
+    </section>
   );
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import type { Match, Item } from '../lib/types';
+import type { Item, Match } from '../lib/types';
 
 interface Props {
   match: Match;
@@ -7,45 +7,65 @@ interface Props {
   foundItem?: Item;
 }
 
+function statusClass(status: Match['status']) {
+  if (status === 'verified') return 'bg-emerald-50 text-emerald-700';
+  if (status === 'rejected') return 'bg-rose-50 text-rose-700';
+  return 'bg-amber-50 text-amber-700';
+}
+
 export default function MatchCard({ match, lostItem, foundItem }: Props) {
   const scorePercent = Math.round(match.similarityScore * 100);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-            match.status === 'verified'
-              ? 'bg-green-100 text-green-700'
-              : match.status === 'rejected'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-yellow-100 text-yellow-700'
-          }`}
-        >
-          {match.status === 'verified' ? '확인됨' : match.status === 'rejected' ? '거절됨' : '대기중'}
-        </span>
-        <span className="text-sm font-medium text-blue-600">유사도 {scorePercent}%</span>
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusClass(match.status)}`}>
+            {match.status}
+          </span>
+          <h2 className="mt-3 text-lg font-semibold text-slate-900">Potential owner match</h2>
+          <p className="mt-1 text-sm text-slate-500">Compare both posts and verify the claimant before resolving the item.</p>
+        </div>
+        <div className="min-w-[140px]">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+            <span>Similarity</span>
+            <span>{scorePercent}%</span>
+          </div>
+          <div className="mt-2 h-2 rounded-full bg-slate-100">
+            <div
+              className="h-2 rounded-full bg-gradient-to-r from-sky-500 to-cyan-400"
+              style={{ width: `${scorePercent}%` }}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="text-sm">
-          <p className="text-xs text-red-500 font-medium mb-1">분실물</p>
+      <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-600">Lost post</p>
           {lostItem ? (
-            <Link to={`/item/${lostItem.id}`} className="text-gray-900 hover:underline">
-              {lostItem.title}
-            </Link>
+            <>
+              <Link to={`/item/${lostItem.id}`} className="mt-2 block text-sm font-semibold text-slate-900 hover:text-sky-700">
+                {lostItem.title}
+              </Link>
+              <p className="mt-1 text-sm text-slate-500">{lostItem.location}</p>
+            </>
           ) : (
-            <span className="text-gray-400">로딩중...</span>
+            <p className="mt-2 text-sm text-slate-400">Loading linked item...</p>
           )}
         </div>
-        <div className="text-sm">
-          <p className="text-xs text-green-600 font-medium mb-1">습득물</p>
+
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">Found post</p>
           {foundItem ? (
-            <Link to={`/item/${foundItem.id}`} className="text-gray-900 hover:underline">
-              {foundItem.title}
-            </Link>
+            <>
+              <Link to={`/item/${foundItem.id}`} className="mt-2 block text-sm font-semibold text-slate-900 hover:text-sky-700">
+                {foundItem.title}
+              </Link>
+              <p className="mt-1 text-sm text-slate-500">{foundItem.location}</p>
+            </>
           ) : (
-            <span className="text-gray-400">로딩중...</span>
+            <p className="mt-2 text-sm text-slate-400">Loading linked item...</p>
           )}
         </div>
       </div>

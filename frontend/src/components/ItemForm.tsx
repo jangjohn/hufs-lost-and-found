@@ -1,7 +1,12 @@
-import { useState } from 'react';
-import type { ItemType, ItemCategory } from '../lib/types';
+import { useMemo, useState } from 'react';
+import type { ItemCategory, ItemType } from '../lib/types';
 import { CATEGORIES, LOCATIONS } from '../lib/types';
 import ImageUploader from './ImageUploader';
+
+const TITLE_LIMIT = 80;
+const DESCRIPTION_LIMIT = 500;
+const QUESTION_LIMIT = 120;
+const ANSWER_LIMIT = 120;
 
 export interface ItemFormData {
   type: ItemType;
@@ -20,6 +25,25 @@ interface Props {
   loading?: boolean;
 }
 
+type FieldErrors = Partial<Record<'title' | 'description' | 'location' | 'lostDate' | 'verificationQ' | 'verificationA', string>>;
+
+function fieldClass(hasError: boolean) {
+  return [
+    'w-full rounded-xl border px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition',
+    hasError
+      ? 'border-rose-300 bg-rose-50 focus:border-rose-400'
+      : 'border-slate-200 bg-white focus:border-sky-400',
+  ].join(' ');
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <label className="mb-1.5 block text-sm font-medium text-slate-800">
+      {children} <span className="text-rose-500">*</span>
+    </label>
+  );
+}
+
 export default function ItemForm({ onSubmit, loading }: Props) {
   const [form, setForm] = useState<ItemFormData>({
     type: 'lost',
@@ -32,144 +56,204 @@ export default function ItemForm({ onSubmit, loading }: Props) {
     verificationA: '',
     images: [],
   });
+  const [errors, setErrors] = useState<FieldErrors>({});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit(form);
-  };
+  const counters = useMemo(() => ({
+    title: `${form.title.length}/${TITLE_LIMIT}`,
+    description: `${form.description.length}/${DESCRIPTION_LIMIT}`,
+    verificationQ: `${form.verificationQ.length}/${QUESTION_LIMIT}`,
+    verificationA: `${form.verificationA.length}/${ANSWER_LIMIT}`,
+  }), [form.description.length, form.title.length, form.verificationA.length, form.verificationQ.length]);
 
   const set = <K extends keyof ItemFormData>(key: K, value: ItemFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (key in errors) {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+  };
+
+  const validate = () => {
+    const nextErrors: FieldErrors = {};
+
+    if (!form.title.trim()) nextErrors.title = 'Enter a clear title for the item.';
+    if (!form.description.trim()) nextErrors.description = 'Describe the item so others can recognize it.';
+    if (!form.location) nextErrors.location = 'Select the place where it was lost or found.';
+    if (!form.lostDate) nextErrors.lostDate = 'Choose the relevant date.';
+    if (!form.verificationQ.trim()) nextErrors.verificationQ = 'Add a question only the real owner can answer.';
+    if (!form.verificationA.trim()) nextErrors.verificationA = 'Add the expected answer.';
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validate()) return;
+    await onSubmit(form);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-      <div className="flex gap-4">
-        <label className="flex items-center gap-1">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 sm:p-6">
+        <div className="sm:col-span-2">
+          <p className="text-sm font-semibold text-slate-900">Post type</p>
+          <div className="mt-3 grid gap-3 min-[480px]:grid-cols-2">
+            {([
+              { value: 'lost', title: 'Lost item', description: 'Ask the campus community to help find it.' },
+              { value: 'found', title: 'Found item', description: 'Report something you picked up and want to return.' },
+            ] as const).map((option) => (
+              <label
+                key={option.value}
+                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                  form.type === option.value
+                    ? 'border-sky-400 bg-sky-50 shadow-sm'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="type"
+                  value={option.value}
+                  checked={form.type === option.value}
+                  onChange={() => set('type', option.value)}
+                  className="sr-only"
+                />
+                <p className="text-sm font-semibold text-slate-900">{option.title}</p>
+                <p className="mt-1 text-xs text-slate-500">{option.description}</p>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="sm:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel>Title</FieldLabel>
+            <span className="text-xs text-slate-400">{counters.title}</span>
+          </div>
           <input
-            type="radio"
-            name="type"
-            value="lost"
-            checked={form.type === 'lost'}
-            onChange={() => set('type', 'lost')}
+            type="text"
+            required
+            maxLength={TITLE_LIMIT}
+            value={form.title}
+            onChange={(event) => set('title', event.target.value)}
+            className={fieldClass(Boolean(errors.title))}
+            placeholder="Example: Black wallet near the library entrance"
           />
-          <span className="text-sm">분실했어요</span>
-        </label>
-        <label className="flex items-center gap-1">
-          <input
-            type="radio"
-            name="type"
-            value="found"
-            checked={form.type === 'found'}
-            onChange={() => set('type', 'found')}
+          {errors.title ? <p className="mt-1.5 text-xs text-rose-600">{errors.title}</p> : null}
+        </div>
+
+        <div className="sm:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel>Description</FieldLabel>
+            <span className="text-xs text-slate-400">{counters.description}</span>
+          </div>
+          <textarea
+            required
+            rows={5}
+            maxLength={DESCRIPTION_LIMIT}
+            value={form.description}
+            onChange={(event) => set('description', event.target.value)}
+            className={fieldClass(Boolean(errors.description))}
+            placeholder="Add color, brand, unique marks, and where it may have been seen."
           />
-          <span className="text-sm">주웠어요</span>
-        </label>
-      </div>
+          {errors.description ? <p className="mt-1.5 text-xs text-rose-600">{errors.description}</p> : null}
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-        <input
-          type="text"
-          required
-          value={form.title}
-          onChange={(e) => set('title', e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          placeholder="예: 검정 지갑 분실"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
-        <textarea
-          required
-          value={form.description}
-          onChange={(e) => set('description', e.target.value)}
-          rows={3}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          placeholder="물건의 특징을 자세히 설명해주세요"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">분류</label>
+          <label className="mb-1.5 block text-sm font-medium text-slate-800">Category</label>
           <select
             value={form.category}
-            onChange={(e) => set('category', e.target.value as ItemCategory)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            onChange={(event) => set('category', event.target.value as ItemCategory)}
+            className={fieldClass(false)}
           >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
+            {CATEGORIES.map((category) => (
+              <option key={category.value} value={category.value}>
+                {category.label}
               </option>
             ))}
           </select>
         </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">장소</label>
+          <FieldLabel>Location</FieldLabel>
           <select
             required
             value={form.location}
-            onChange={(e) => set('location', e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+            onChange={(event) => set('location', event.target.value)}
+            className={fieldClass(Boolean(errors.location))}
           >
-            <option value="">선택하세요</option>
-            {LOCATIONS.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
+            <option value="">Select a campus location</option>
+            {LOCATIONS.map((location) => (
+              <option key={location} value={location}>
+                {location}
               </option>
             ))}
           </select>
+          {errors.location ? <p className="mt-1.5 text-xs text-rose-600">{errors.location}</p> : null}
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {form.type === 'lost' ? '분실 날짜' : '습득 날짜'}
-        </label>
-        <input
-          type="date"
-          required
-          value={form.lostDate}
-          onChange={(e) => set('lostDate', e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-        />
-      </div>
+        <div className="sm:col-span-2">
+          <FieldLabel>{form.type === 'lost' ? 'Lost date' : 'Found date'}</FieldLabel>
+          <input
+            type="date"
+            required
+            value={form.lostDate}
+            onChange={(event) => set('lostDate', event.target.value)}
+            className={fieldClass(Boolean(errors.lostDate))}
+          />
+          {errors.lostDate ? <p className="mt-1.5 text-xs text-rose-600">{errors.lostDate}</p> : null}
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">본인 확인 질문</label>
-        <input
-          type="text"
-          required
-          value={form.verificationQ}
-          onChange={(e) => set('verificationQ', e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          placeholder="예: 지갑 안에 있는 카드 개수는?"
-        />
-      </div>
+        <div className="sm:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel>Verification question</FieldLabel>
+            <span className="text-xs text-slate-400">{counters.verificationQ}</span>
+          </div>
+          <input
+            type="text"
+            required
+            maxLength={QUESTION_LIMIT}
+            value={form.verificationQ}
+            onChange={(event) => set('verificationQ', event.target.value)}
+            className={fieldClass(Boolean(errors.verificationQ))}
+            placeholder="Example: What sticker is on the case?"
+          />
+          {errors.verificationQ ? <p className="mt-1.5 text-xs text-rose-600">{errors.verificationQ}</p> : null}
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">확인 질문 답변</label>
-        <input
-          type="text"
-          required
-          value={form.verificationA}
-          onChange={(e) => set('verificationA', e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-          placeholder="정답을 입력하세요"
-        />
+        <div className="sm:col-span-2">
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel>Verification answer</FieldLabel>
+            <span className="text-xs text-slate-400">{counters.verificationA}</span>
+          </div>
+          <input
+            type="text"
+            required
+            maxLength={ANSWER_LIMIT}
+            value={form.verificationA}
+            onChange={(event) => set('verificationA', event.target.value)}
+            className={fieldClass(Boolean(errors.verificationA))}
+            placeholder="Only you and the owner should know this answer."
+          />
+          {errors.verificationA ? <p className="mt-1.5 text-xs text-rose-600">{errors.verificationA}</p> : null}
+        </div>
       </div>
 
       <ImageUploader images={form.images} onChange={(files) => set('images', files)} />
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-600 text-white py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? '등록 중...' : '등록하기'}
-      </button>
+      <div className="flex flex-col gap-3 rounded-2xl bg-slate-900 px-5 py-4 text-white sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold">Review before posting</p>
+          <p className="text-xs text-slate-300">Required fields are marked with an asterisk. Photos are optional but strongly recommended.</p>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? 'Posting...' : 'Publish post'}
+        </button>
+      </div>
     </form>
   );
 }

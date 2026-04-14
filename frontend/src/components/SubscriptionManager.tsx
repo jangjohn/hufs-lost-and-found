@@ -17,71 +17,90 @@ export default function SubscriptionManager({ userId, subscriptions }: Props) {
   const handleAdd = async () => {
     if (!category && !location) return;
 
-    const newSub: Subscription = { category, location };
-    const updated = [...subs, newSub];
+    const nextSubscription: Subscription = { category, location };
+    const updated = [...subs, nextSubscription];
     setSubs(updated);
-
     await updateDoc(doc(db, 'users', userId), { subscriptions: updated });
     setCategory('');
     setLocation('');
   };
 
   const handleRemove = async (index: number) => {
-    const updated = subs.filter((_, i) => i !== index);
+    const updated = subs.filter((_, currentIndex) => currentIndex !== index);
     setSubs(updated);
     await updateDoc(doc(db, 'users', userId), { subscriptions: updated });
   };
 
   return (
-    <div>
-      <h3 className="text-sm font-medium text-gray-700 mb-2">알림 구독 설정</h3>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Notification subscriptions</h3>
+          <p className="mt-1 text-xs text-slate-500">Choose a category, a location, or both to receive focused alerts.</p>
+        </div>
 
-      <div className="flex gap-2 mb-3">
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-        >
-          <option value="">전체 분류</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-        >
-          <option value="">전체 장소</option>
-          {LOCATIONS.map((loc) => (
-            <option key={loc} value={loc}>
-              {loc}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
-        >
-          추가
-        </button>
+        <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+          >
+            <option value="">Any category</option>
+            {CATEGORIES.map((categoryOption) => (
+              <option key={categoryOption.value} value={categoryOption.value}>
+                {categoryOption.label}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900"
+          >
+            <option value="">Any location</option>
+            {LOCATIONS.map((locationOption) => (
+              <option key={locationOption} value={locationOption}>
+                {locationOption}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            Add alert
+          </button>
+        </div>
       </div>
 
-      <ul className="space-y-1">
-        {subs.map((sub, i) => (
-          <li key={i} className="flex items-center justify-between bg-gray-50 px-3 py-1.5 rounded text-sm">
-            <span>
-              {sub.category || '전체 분류'} · {sub.location || '전체 장소'}
-            </span>
-            <button onClick={() => handleRemove(i)} className="text-red-500 text-xs hover:underline">
-              삭제
-            </button>
-          </li>
-        ))}
-        {subs.length === 0 && <p className="text-xs text-gray-400">구독이 없습니다</p>}
-      </ul>
+      <div className="grid gap-3">
+        {subs.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500">
+            No subscriptions yet. Create one to get notified about new matching posts.
+          </div>
+        ) : (
+          subs.map((sub, index) => (
+            <div key={`${sub.category}-${sub.location}-${index}`} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-900">
+                  {sub.category || 'Any category'}
+                </p>
+                <p className="text-sm text-slate-500">{sub.location || 'Any location'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemove(index)}
+                className="rounded-full border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+              >
+                Remove
+              </button>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
