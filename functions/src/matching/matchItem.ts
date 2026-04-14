@@ -67,11 +67,10 @@ async function createEmbedding(openai: OpenAI, text: string): Promise<number[]> 
  */
 export const matchItem = onMessagePublished(
   {
-    topic: 'new-item', 
+    topic: 'new-item',
     secrets: ['OPENAI_API_KEY', 'PINECONE_API_KEY'],
-   },
-   async (event) => 
-{
+  },
+  async (event) => {
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
@@ -101,7 +100,7 @@ export const matchItem = onMessagePublished(
     logger.info(`[matchItem] Embedding created, dimensions: ${vector.length}`);
 
     // Store vector in Pinecone
-    const index = pinecone.index(process.env.PINECONE_INDEX!);
+    const index = pinecone.index(process.env.PINECONE_INDEX || 'lost-and-found');
     await index.upsert({
       records: [
         {
