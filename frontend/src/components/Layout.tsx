@@ -3,6 +3,33 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationBell from './NotificationBell';
 
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    brand: 'HUFS 분실물 찾기',
+    subtitle: '교내 분실물 커뮤니티',
+    browse: '게시판',
+    signIn: '로그인',
+    postItem: '글쓰기',
+    matches: '매칭',
+    profile: '프로필',
+    signOut: '로그아웃',
+    toggleNavigation: '메뉴 열기',
+  },
+  en: {
+    brand: 'HUFS Lost & Found',
+    subtitle: 'Campus community board',
+    browse: 'Browse',
+    signIn: 'Sign in',
+    postItem: 'Post item',
+    matches: 'Matches',
+    profile: 'Profile',
+    signOut: 'Sign out',
+    toggleNavigation: 'Toggle navigation',
+  },
+};
+
 function navClass(isActive: boolean) {
   return [
     'rounded-full px-3 py-2 text-sm font-medium transition-colors',
@@ -16,21 +43,22 @@ export default function Layout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = text[locale];
 
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
   const guestLinks = [
-    { to: '/', label: 'Browse' },
-    { to: '/login', label: 'Sign in' },
+    { to: '/', label: t.browse },
+    { to: '/login', label: t.signIn },
   ];
 
   const authedLinks = [
-    { to: '/', label: 'Browse' },
-    { to: '/post', label: 'Post item' },
-    { to: '/matches', label: 'Matches' },
-    { to: '/profile', label: 'Profile' },
+    { to: '/', label: t.browse },
+    { to: '/post', label: t.postItem },
+    { to: '/matches', label: t.matches },
+    { to: '/profile', label: t.profile },
   ];
 
   const links = user ? authedLinks : guestLinks;
@@ -41,10 +69,10 @@ export default function Layout() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <NavLink to="/" className="text-base font-semibold tracking-tight text-sky-700 sm:text-lg">
-              HUFS Lost & Found
+              {t.brand}
             </NavLink>
             <span className="hidden rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 sm:inline-flex">
-              Campus community board
+              {t.subtitle}
             </span>
           </div>
 
@@ -65,7 +93,7 @@ export default function Layout() {
                   onClick={signOut}
                   className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                 >
-                  Sign out
+                  {t.signOut}
                 </button>
               </>
             ) : null}
@@ -75,7 +103,7 @@ export default function Layout() {
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
             className="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slate-600 md:hidden"
-            aria-label="Toggle navigation"
+            aria-label={t.toggleNavigation}
             aria-expanded={menuOpen}
           >
             <span className="flex h-5 w-5 flex-col items-center justify-center gap-1">
@@ -99,7 +127,7 @@ export default function Layout() {
                   onClick={signOut}
                   className="mt-2 rounded-full border border-slate-200 px-4 py-2 text-left text-sm font-medium text-slate-600"
                 >
-                  Sign out
+                  {t.signOut}
                 </button>
               ) : null}
             </div>

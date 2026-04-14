@@ -5,14 +5,37 @@ import { useAuth } from '../hooks/useAuth';
 import { getItem, getMatchesForUser } from '../hooks/useFirestore';
 import type { Item, Match } from '../lib/types';
 
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    emptyTitle: '아직 매칭 결과가 없습니다',
+    emptyDescription: 'AI가 분실물과 습득물 게시글의 유사성을 찾으면 이곳에 결과가 표시됩니다.',
+    loading: '매칭 결과를 불러오는 중...',
+    badge: '매칭 확인',
+    title: '예상 매칭 결과',
+    description: 'AI가 연결한 분실물과 습득물 게시글을 검토하고 본인 확인 후 연락을 진행하세요.',
+    totalMatches: '건의 매칭',
+  },
+  en: {
+    emptyTitle: 'No matches yet',
+    emptyDescription: 'When the matching service finds related lost and found posts, they will appear here with a similarity score for quick review.',
+    loading: 'Loading matches',
+    badge: 'Match review',
+    title: 'Potential matches',
+    description: 'Review AI-generated connections between your lost and found posts and contact the claimant after verifying ownership.',
+    totalMatches: 'total matches',
+  },
+};
+
 function EmptyMatchesState() {
+  const t = text[locale];
+
   return (
     <div className="flex flex-col items-center rounded-[2rem] border border-dashed border-slate-300 bg-white px-6 py-14 text-center shadow-sm">
       <div className="mb-5 rounded-full bg-amber-100 px-5 py-4 text-2xl">↔</div>
-      <h2 className="text-lg font-semibold text-slate-900">No matches yet</h2>
-      <p className="mt-2 max-w-md text-sm text-slate-500">
-        When the matching service finds related lost and found posts, they will appear here with a similarity score for quick review.
-      </p>
+      <h2 className="text-lg font-semibold text-slate-900">{t.emptyTitle}</h2>
+      <p className="mt-2 max-w-md text-sm text-slate-500">{t.emptyDescription}</p>
     </div>
   );
 }
@@ -22,6 +45,7 @@ export default function Matches() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [itemsMap, setItemsMap] = useState<Record<string, Item>>({});
   const [loading, setLoading] = useState(true);
+  const t = text[locale];
 
   useEffect(() => {
     if (!user) return;
@@ -50,7 +74,7 @@ export default function Matches() {
   }, [user]);
 
   if (loading) {
-    return <LoadingSpinner label="Loading matches" fullScreen />;
+    return <LoadingSpinner label={t.loading} fullScreen />;
   }
 
   return (
@@ -59,15 +83,13 @@ export default function Matches() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-              Match review
+              {t.badge}
             </span>
-            <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">Potential matches</h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Review AI-generated connections between your lost and found posts and contact the claimant after verifying ownership.
-            </p>
+            <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">{t.title}</h1>
+            <p className="mt-2 text-sm text-slate-500">{t.description}</p>
           </div>
           <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            <strong className="font-semibold text-slate-900">{matches.length}</strong> total matches
+            <strong className="font-semibold text-slate-900">{matches.length}</strong> {t.totalMatches}
           </div>
         </div>
       </div>

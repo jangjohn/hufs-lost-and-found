@@ -8,6 +8,53 @@ import { db } from '../lib/firebase';
 import { CATEGORIES } from '../lib/types';
 import type { Item, Match } from '../lib/types';
 
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    loading: '게시글 정보를 불러오는 중...',
+    notFound: '게시글을 찾을 수 없습니다.',
+    backToList: '목록으로',
+    previousImage: '이전 이미지',
+    nextImage: '다음 이미지',
+    goToImage: '이미지로 이동',
+    noPhoto: '등록된 사진이 없습니다.',
+    lostItem: '분실물',
+    foundItem: '습득물',
+    location: '장소',
+    date: '날짜',
+    postedBy: '작성자',
+    verifyOwnership: '본인 확인하기',
+    relatedMatches: '관련 매칭 결과',
+    relatedMatchesDescription: '이 게시글과 연결된 다른 분실물/습득물 게시글입니다.',
+    candidate: '건',
+    similarity: '유사도',
+    status: '상태',
+    openRelatedPost: '관련 게시글 보기',
+  },
+  en: {
+    loading: 'Loading post details',
+    notFound: 'This post could not be found.',
+    backToList: 'Back to list',
+    previousImage: 'Previous image',
+    nextImage: 'Next image',
+    goToImage: 'Go to image',
+    noPhoto: 'No photo uploaded for this post.',
+    lostItem: 'Lost item',
+    foundItem: 'Found item',
+    location: 'Location',
+    date: 'Date',
+    postedBy: 'Posted by',
+    verifyOwnership: 'Verify ownership',
+    relatedMatches: 'Related matches',
+    relatedMatchesDescription: 'These posts are already linked to this item by the matching flow.',
+    candidate: 'candidate',
+    similarity: 'similarity',
+    status: 'Status',
+    openRelatedPost: 'Open related post',
+  },
+};
+
 export default function PostDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -16,6 +63,7 @@ export default function PostDetail() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [imgIndex, setImgIndex] = useState(0);
+  const t = text[locale];
 
   useEffect(() => {
     if (!id) return;
@@ -40,13 +88,13 @@ export default function PostDetail() {
   }, [item?.id]);
 
   if (loading) {
-    return <LoadingSpinner label="Loading post details" fullScreen />;
+    return <LoadingSpinner label={t.loading} fullScreen />;
   }
 
   if (!item) {
     return (
       <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 shadow-sm">
-        This post could not be found.
+        {t.notFound}
       </div>
     );
   }
@@ -66,7 +114,7 @@ export default function PostDetail() {
         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
       >
         <span aria-hidden="true">←</span>
-        Back to list
+        {t.backToList}
       </button>
 
       <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -86,7 +134,7 @@ export default function PostDetail() {
                       type="button"
                       onClick={goPrev}
                       className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow-sm transition hover:bg-white"
-                      aria-label="Previous image"
+                      aria-label={t.previousImage}
                     >
                       ←
                     </button>
@@ -94,7 +142,7 @@ export default function PostDetail() {
                       type="button"
                       onClick={goNext}
                       className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow-sm transition hover:bg-white"
-                      aria-label="Next image"
+                      aria-label={t.nextImage}
                     >
                       →
                     </button>
@@ -112,7 +160,7 @@ export default function PostDetail() {
                       className={`h-2.5 rounded-full transition ${
                         index === imgIndex ? 'w-8 bg-sky-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
                       }`}
-                      aria-label={`Go to image ${index + 1}`}
+                      aria-label={`${t.goToImage} ${index + 1}`}
                     />
                   ))}
                 </div>
@@ -120,7 +168,7 @@ export default function PostDetail() {
             </div>
           ) : (
             <div className="flex h-[280px] items-center justify-center rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 text-center text-sm text-slate-500 sm:h-[360px]">
-              No photo uploaded for this post.
+              {t.noPhoto}
             </div>
           )}
         </div>
@@ -128,7 +176,7 @@ export default function PostDetail() {
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${item.type === 'lost' ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
-              {item.type === 'lost' ? 'Lost item' : 'Found item'}
+              {item.type === 'lost' ? t.lostItem : t.foundItem}
             </span>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{categoryLabel}</span>
             <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">{item.status}</span>
@@ -139,15 +187,15 @@ export default function PostDetail() {
 
           <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
             <div className="flex items-center justify-between gap-4">
-              <span className="font-medium text-slate-900">Location</span>
+              <span className="font-medium text-slate-900">{t.location}</span>
               <span>{item.location}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="font-medium text-slate-900">Date</span>
+              <span className="font-medium text-slate-900">{t.date}</span>
               <span>{dateStr}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="font-medium text-slate-900">Posted by</span>
+              <span className="font-medium text-slate-900">{t.postedBy}</span>
               <span>{item.userName}</span>
             </div>
           </div>
@@ -157,7 +205,7 @@ export default function PostDetail() {
               to={`/verify/${item.id}`}
               className="mt-6 inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              Verify ownership
+              {t.verifyOwnership}
             </Link>
           ) : null}
         </div>
@@ -167,11 +215,11 @@ export default function PostDetail() {
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">Related matches</h2>
-              <p className="mt-1 text-sm text-slate-500">These posts are already linked to this item by the matching flow.</p>
+              <h2 className="text-xl font-semibold text-slate-900">{t.relatedMatches}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t.relatedMatchesDescription}</p>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-              {matches.length} candidate{matches.length > 1 ? 's' : ''}
+              {matches.length} {t.candidate}
             </span>
           </div>
 
@@ -179,14 +227,14 @@ export default function PostDetail() {
             {matches.map((match) => (
               <div key={match.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{Math.round(match.similarityScore * 100)}% similarity</p>
-                  <p className="text-sm text-slate-500">Status: {match.status}</p>
+                  <p className="text-sm font-semibold text-slate-900">{Math.round(match.similarityScore * 100)}% {t.similarity}</p>
+                  <p className="text-sm text-slate-500">{t.status}: {match.status}</p>
                 </div>
                 <Link
                   to={`/item/${item.type === 'lost' ? match.foundItemId : match.lostItemId}`}
                   className="inline-flex items-center rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
                 >
-                  Open related post
+                  {t.openRelatedPost}
                 </Link>
               </div>
             ))}

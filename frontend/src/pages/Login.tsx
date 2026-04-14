@@ -2,10 +2,40 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    badge: '학교 계정 로그인',
+    heroTitle: '교내 구성원의 분실물이 다시 주인을 찾을 수 있도록 돕습니다.',
+    heroDescription: 'HUFS 분실물 찾기는 분실물 등록, 매칭 결과 확인, 본인 확인 절차까지 한곳에서 처리할 수 있는 교내 서비스입니다.',
+    feature1: '학교 계정으로만 안전하게 로그인할 수 있습니다.',
+    feature2: 'AI 기반 매칭과 알림 흐름을 지원합니다.',
+    feature3: '모바일과 데스크톱 모두에서 빠르게 신고할 수 있습니다.',
+    signInTitle: '로그인',
+    signInDescription: '학교 Google 계정으로 로그인하고 게시글 작성, 알림 관리, 매칭 확인 기능을 이용하세요.',
+    continueWithGoogle: 'Google로 계속하기',
+    accountHint: '`.ac.kr` 계정만 게시글 작성과 알림 기능을 사용할 수 있습니다.',
+  },
+  en: {
+    badge: 'University access',
+    heroTitle: 'Reconnect students with what matters.',
+    heroDescription: 'HUFS Lost & Found helps students post items, review possible matches, and verify ownership before returning belongings.',
+    feature1: 'Secure sign-in limited to university accounts.',
+    feature2: 'AI-assisted matching and notification workflow.',
+    feature3: 'Designed for quick reporting on both desktop and mobile.',
+    signInTitle: 'Sign in',
+    signInDescription: 'Use your university Google account to post items, manage alerts, and review matches.',
+    continueWithGoogle: 'Continue with Google',
+    accountHint: 'Only `.ac.kr` accounts are allowed to access posting and notification features.',
+  },
+};
+
 export default function Login() {
   const { signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const t = text[locale];
 
   const handleLogin = async () => {
     setError('');
@@ -23,23 +53,21 @@ export default function Login() {
       <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl lg:grid-cols-[1.05fr_0.95fr]">
         <div className="bg-[linear-gradient(155deg,_#0f172a,_#0369a1)] p-8 text-white sm:p-10">
           <span className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">
-            University access
+            {t.badge}
           </span>
-          <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">Reconnect students with what matters.</h1>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-sky-100/90">
-            HUFS Lost & Found helps students post items, review possible matches, and verify ownership before returning belongings.
-          </p>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">{t.heroTitle}</h1>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-sky-100/90">{t.heroDescription}</p>
           <div className="mt-8 grid gap-3 text-sm text-slate-100">
-            <div className="rounded-2xl bg-white/10 p-4">Secure sign-in limited to university accounts.</div>
-            <div className="rounded-2xl bg-white/10 p-4">AI-assisted matching and notification workflow.</div>
-            <div className="rounded-2xl bg-white/10 p-4">Designed for quick reporting on both desktop and mobile.</div>
+            <div className="rounded-2xl bg-white/10 p-4">{t.feature1}</div>
+            <div className="rounded-2xl bg-white/10 p-4">{t.feature2}</div>
+            <div className="rounded-2xl bg-white/10 p-4">{t.feature3}</div>
           </div>
         </div>
 
         <div className="flex items-center justify-center p-8 sm:p-10">
           <div className="w-full max-w-md">
-            <h2 className="text-2xl font-bold text-slate-900">Sign in</h2>
-            <p className="mt-2 text-sm text-slate-500">Use your university Google account to post items, manage alerts, and review matches.</p>
+            <h2 className="text-2xl font-bold text-slate-900">{t.signInTitle}</h2>
+            <p className="mt-2 text-sm text-slate-500">{t.signInDescription}</p>
 
             <button
               onClick={handleLogin}
@@ -63,10 +91,10 @@ export default function Login() {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              {t.continueWithGoogle}
             </button>
 
-            <p className="mt-4 text-xs text-slate-500">Only `.ac.kr` accounts are allowed to access posting and notification features.</p>
+            <p className="mt-4 text-xs text-slate-500">{t.accountHint}</p>
             {error ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
           </div>
         </div>

@@ -1,5 +1,28 @@
 import { useEffect, useMemo, useRef } from 'react';
 
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    title: '이미지',
+    helper: '최대 3장까지 업로드할 수 있으며, 첫 번째 이미지가 대표 사진이 됩니다.',
+    previewAlt: '미리보기',
+    cover: '대표',
+    image: '이미지',
+    remove: '삭제',
+    addPhoto: '사진 추가',
+  },
+  en: {
+    title: 'Images',
+    helper: 'Upload up to 3 photos. The first image becomes the cover.',
+    previewAlt: 'Preview',
+    cover: 'Cover',
+    image: 'Image',
+    remove: 'Remove',
+    addPhoto: 'Add photo',
+  },
+};
+
 interface Props {
   images: File[];
   onChange: (files: File[]) => void;
@@ -8,6 +31,7 @@ interface Props {
 export default function ImageUploader({ images, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const previews = useMemo(() => images.map((file) => URL.createObjectURL(file)), [images]);
+  const t = text[locale];
 
   useEffect(() => {
     return () => {
@@ -33,8 +57,8 @@ export default function ImageUploader({ images, onChange }: Props) {
     <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-slate-900">Images</p>
-          <p className="text-xs text-slate-500">Upload up to 3 photos. The first image becomes the cover.</p>
+          <p className="text-sm font-medium text-slate-900">{t.title}</p>
+          <p className="text-xs text-slate-500">{t.helper}</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">
           {images.length}/3
@@ -44,15 +68,15 @@ export default function ImageUploader({ images, onChange }: Props) {
       <div className="grid grid-cols-2 gap-3 min-[480px]:grid-cols-3">
         {previews.map((src, index) => (
           <div key={src} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <img src={src} alt={`Preview ${index + 1}`} className="h-32 w-full object-cover" />
+            <img src={src} alt={`${t.previewAlt} ${index + 1}`} className="h-32 w-full object-cover" />
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-slate-900/75 to-transparent p-3">
-              <span className="text-xs font-medium text-white">{index === 0 ? 'Cover' : `Image ${index + 1}`}</span>
+              <span className="text-xs font-medium text-white">{index === 0 ? t.cover : `${t.image} ${index + 1}`}</span>
               <button
                 type="button"
                 onClick={() => handleRemove(index)}
                 className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-slate-700"
               >
-                Remove
+                {t.remove}
               </button>
             </div>
           </div>
@@ -65,7 +89,7 @@ export default function ImageUploader({ images, onChange }: Props) {
             className="flex h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-sky-300 bg-sky-50 text-center text-sm font-medium text-sky-700 transition hover:border-sky-400 hover:bg-sky-100"
           >
             <span className="text-2xl leading-none">+</span>
-            <span>Add photo</span>
+            <span>{t.addPhoto}</span>
           </button>
         )}
       </div>

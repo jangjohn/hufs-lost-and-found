@@ -1,3 +1,14 @@
+const locale = 'ko' as const;
+
+const text = {
+  ko: {
+    loading: '로딩 중...',
+  },
+  en: {
+    loading: 'Loading',
+  },
+};
+
 interface LoadingSpinnerProps {
   label?: string;
   fullScreen?: boolean;
@@ -5,7 +16,7 @@ interface LoadingSpinnerProps {
 }
 
 export default function LoadingSpinner({
-  label = 'Loading',
+  label = text[locale].loading,
   fullScreen = false,
   className = '',
 }: LoadingSpinnerProps) {
