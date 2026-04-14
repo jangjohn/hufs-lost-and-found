@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import NotificationBell from './NotificationBell';
 
@@ -41,13 +41,8 @@ function navClass(isActive: boolean) {
 
 export default function Layout() {
   const { user, signOut } = useAuth();
-  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const t = text[locale];
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [location.pathname]);
 
   const guestLinks = [
     { to: '/', label: t.browse },
@@ -90,7 +85,10 @@ export default function Layout() {
                 <NotificationBell />
                 <span className="max-w-[180px] truncate text-sm text-slate-500">{user.displayName ?? user.email}</span>
                 <button
-                  onClick={signOut}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void signOut();
+                  }}
                   className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                 >
                   {t.signOut}
@@ -118,13 +116,22 @@ export default function Layout() {
           <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
             <div className="flex flex-col gap-2">
               {links.map((link) => (
-                <NavLink key={link.to} to={link.to} end={link.to === '/'} className={({ isActive }) => navClass(isActive)}>
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.to === '/'}
+                  className={({ isActive }) => navClass(isActive)}
+                  onClick={() => setMenuOpen(false)}
+                >
                   {link.label}
                 </NavLink>
               ))}
               {user ? (
                 <button
-                  onClick={signOut}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void signOut();
+                  }}
                   className="mt-2 rounded-full border border-slate-200 px-4 py-2 text-left text-sm font-medium text-slate-600"
                 >
                   {t.signOut}

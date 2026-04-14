@@ -83,10 +83,6 @@ export default function PostDetail() {
     })();
   }, [id]);
 
-  useEffect(() => {
-    setImgIndex(0);
-  }, [item?.id]);
-
   if (loading) {
     return <LoadingSpinner label={t.loading} fullScreen />;
   }
@@ -102,9 +98,10 @@ export default function PostDetail() {
   const categoryLabel = CATEGORIES.find((category) => category.value === item.category)?.label ?? item.category;
   const dateStr = item.lostDate?.toDate().toLocaleDateString('ko-KR') ?? '';
   const hasImages = item.imageUrls.length > 0;
+  const currentImgIndex = imgIndex < item.imageUrls.length ? imgIndex : 0;
 
-  const goPrev = () => setImgIndex((prev) => (prev === 0 ? item.imageUrls.length - 1 : prev - 1));
-  const goNext = () => setImgIndex((prev) => (prev === item.imageUrls.length - 1 ? 0 : prev + 1));
+  const goPrev = () => setImgIndex((prev) => (prev <= 0 ? item.imageUrls.length - 1 : prev - 1));
+  const goNext = () => setImgIndex((prev) => (prev >= item.imageUrls.length - 1 ? 0 : prev + 1));
 
   return (
     <section className="space-y-6">
@@ -123,7 +120,7 @@ export default function PostDetail() {
             <div className="space-y-4">
               <div className="relative overflow-hidden rounded-[1.5rem] bg-slate-100">
                 <img
-                  src={item.imageUrls[imgIndex]}
+                  src={item.imageUrls[currentImgIndex]}
                   alt={item.title}
                   className="h-[280px] w-full object-cover sm:h-[360px]"
                 />
@@ -158,7 +155,7 @@ export default function PostDetail() {
                       type="button"
                       onClick={() => setImgIndex(index)}
                       className={`h-2.5 rounded-full transition ${
-                        index === imgIndex ? 'w-8 bg-sky-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                        index === currentImgIndex ? 'w-8 bg-sky-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
                       }`}
                       aria-label={`${t.goToImage} ${index + 1}`}
                     />

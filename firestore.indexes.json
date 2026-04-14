@@ -91,6 +91,14 @@
         { "fieldPath": "itemId", "order": "ASCENDING" },
         { "fieldPath": "userId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lostItemId", "order": "ASCENDING" },
+        { "fieldPath": "foundItemId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -73,7 +73,8 @@ export async function addItem(
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
-  const { verificationA: _, ...rest } = data;
+  const { verificationA, ...rest } = data;
+  void verificationA;
 
   const docRef = await addDoc(collection(db, 'items'), {
     ...rest,

@@ -25,23 +25,7 @@ export function useNotification(userId: string | undefined) {
   );
   const [token, setToken] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!userId || permission !== 'granted') return;
-    void registerToken(userId);
-  }, [userId, permission]);
-
-  const requestPermission = async () => {
-    if (!userId || typeof Notification === 'undefined') return;
-
-    const result = await Notification.requestPermission();
-    setPermission(result);
-
-    if (result === 'granted') {
-      await registerToken(userId);
-    }
-  };
-
-  const registerToken = async (uid: string) => {
+  async function registerToken(uid: string) {
     try {
       const messaging = await getMessagingInstance();
       if (!messaging) return;
@@ -66,6 +50,26 @@ export function useNotification(userId: string | undefined) {
       });
     } catch (error) {
       console.error('Failed to register FCM token:', error);
+    }
+  }
+
+  useEffect(() => {
+    if (!userId || permission !== 'granted') return;
+    const timeoutId = window.setTimeout(() => {
+      void registerToken(userId);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [userId, permission]);
+
+  const requestPermission = async () => {
+    if (!userId || typeof Notification === 'undefined') return;
+
+    const result = await Notification.requestPermission();
+    setPermission(result);
+
+    if (result === 'granted') {
+      await registerToken(userId);
     }
   };
 
