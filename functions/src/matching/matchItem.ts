@@ -65,7 +65,13 @@ async function createEmbedding(openai: OpenAI, text: string): Promise<number[]> 
 /**
  * Cloud Function triggered by Pub/Sub message on the 'new-item' topic.
  */
-export const matchItem = onMessagePublished('new-item', async (event) => {
+export const matchItem = onMessagePublished(
+  {
+    topic: 'new-item', 
+    secrets: ['OPENAI_API_KEY', 'PINECONE_API_KEY'],
+   },
+   async (event) => 
+{
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
