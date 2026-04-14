@@ -100,7 +100,7 @@ export const matchItem = onMessagePublished(
     logger.info(`[matchItem] Embedding created, dimensions: ${vector.length}`);
 
     // Store vector in Pinecone
-    const index = pinecone.index(process.env.PINECONE_INDEX || 'lost-and-found');
+    const index = pinecone.index(process.env.PINECONE_INDEX || 'hufs-lost-and-found');
     await index.upsert({
       records: [
         {
