@@ -318,6 +318,13 @@ label span {
   padding: 1rem;
 }
 
+.auth-loading {
+  margin: 0;
+  color: #627085;
+  font-weight: 800;
+  text-align: center;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

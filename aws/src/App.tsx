@@ -1,12 +1,12 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
-import '@aws-amplify/ui-react/styles.css';
+import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import type { AuthUser, FetchUserAttributesOutput } from 'aws-amplify/auth';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes, getCurrentUser, signOut as amplifySignOut } from 'aws-amplify/auth';
 import { getUrl, uploadData } from 'aws-amplify/storage';
+import { Hub } from 'aws-amplify/utils';
 import type { Schema } from '../amplify/data/resource';
 import { amplifyConfigured } from './amplifyClient';
+import { shouldRefreshAuthUser } from './authState';
 import {
   buildItemImagePath,
   categories,
@@ -43,6 +43,7 @@ type AmplifyItemRecord = {
 };
 
 const client = amplifyConfigured ? generateClient<Schema>() : null;
+const AuthPanel = lazy(() => import('./AuthPanel'));
 
 const typeLabels: Record<ItemType, string> = {
   lost: '분실',
@@ -214,7 +215,9 @@ function PublicApp() {
 
       {showSignIn ? (
         <section className="auth-panel" aria-label="로그인">
-          <Authenticator loginMechanisms={['email']} />
+          <Suspense fallback={<p className="auth-loading">로그인 화면을 불러오는 중입니다...</p>}>
+            <AuthPanel />
+          </Suspense>
         </section>
       ) : null}
     </main>
@@ -565,25 +568,43 @@ function App() {
     return <SetupScreen />;
   }
 
-  return (
-    <Authenticator.Provider>
-      <AppContent />
-    </Authenticator.Provider>
-  );
+  return <AppContent />;
 }
 
 function AppContent() {
-  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
-  if (authStatus !== 'authenticated') {
+  useEffect(() => {
+    let active = true;
+
+    async function refreshUser() {
+      try {
+        const nextUser = await getCurrentUser();
+        if (active) setUser(nextUser);
+      } catch {
+        if (active) setUser(null);
+      }
+    }
+
+    refreshUser();
+
+    const cancelHubListener = Hub.listen('auth', ({ payload }) => {
+      if (shouldRefreshAuthUser(payload.event)) {
+        void refreshUser();
+      }
+    });
+
+    return () => {
+      active = false;
+      cancelHubListener();
+    };
+  }, []);
+
+  if (!user) {
     return <PublicApp />;
   }
 
-  return (
-    <Authenticator loginMechanisms={['email']}>
-      {({ signOut, user }) => (user ? <AuthenticatedApp signOut={() => signOut?.()} user={user} /> : <PublicApp />)}
-    </Authenticator>
-  );
+  return <AuthenticatedApp signOut={() => void amplifySignOut()} user={user} />;
 }
 
 export default App;
