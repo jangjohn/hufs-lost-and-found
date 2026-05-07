@@ -72,7 +72,7 @@ function createDefaultForm(): ItemFormState {
 }
 
 function toMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'Unexpected AWS operation error';
+  return error instanceof Error ? error.message : 'Unexpected service operation error';
 }
 
 function normalizeItem(record: AmplifyItemRecord): Item {
@@ -88,7 +88,7 @@ function normalizeItem(record: AmplifyItemRecord): Item {
     imageKeys: (record.imageKeys ?? []).filter((key): key is string => Boolean(key)),
     imageUrls: [],
     verificationQ: record.verificationQ ?? '',
-    ownerName: record.ownerName ?? 'Cognito user',
+    ownerName: record.ownerName ?? 'School user',
     createdAt: record.createdAt ?? '',
   };
 }
@@ -131,16 +131,16 @@ function SetupScreen() {
   return (
     <main className="app-shell setup-screen">
       <section className="panel setup-panel">
-        <p className="eyebrow">Amplify configuration required</p>
-        <h1>AWS 백엔드 설정 파일이 아직 없습니다.</h1>
+        <p className="eyebrow">Service configuration required</p>
+        <h1>서비스 설정 파일이 아직 없습니다.</h1>
         <p className="muted">
-          Cognito, DynamoDB/AppSync, S3를 사용하려면 Amplify Gen2가 생성하는 amplify_outputs.json이 필요합니다.
+          배포 환경에서 생성되는 설정 파일이 있어야 서비스를 실행할 수 있습니다.
         </p>
         <pre>
           <code>npx ampx sandbox --outputs-out-dir src</code>
         </pre>
         <p className="muted">
-          Amplify Hosting에서는 빌드 설정이 pipeline-deploy를 실행해 같은 파일을 생성하도록 구성되어 있습니다.
+          로컬 개발 환경에서는 위 명령으로 설정 파일을 생성하세요.
         </p>
       </section>
     </main>
@@ -154,27 +154,27 @@ function PublicApp() {
     <main className="app-shell">
       <nav className="nav">
         <div>
-          <strong>HUFS Lost & Found AWS</strong>
-          <span>Amplify · Cognito · DynamoDB · S3</span>
+          <strong>HUFS Lost & Found</strong>
+          <span>Campus lost and found service</span>
         </div>
         <button className="secondary-button" type="button" onClick={() => setShowSignIn(true)}>
-          Sign in
+          로그인
         </button>
       </nav>
 
       <section className="hero">
         <div>
-          <p className="eyebrow">AWS migration version</p>
-          <h1>교내 분실물 서비스를 먼저 둘러보세요.</h1>
+          <p className="eyebrow">HUFS campus service</p>
+          <h1>잃어버린 물건을 더 빨리 찾아보세요.</h1>
           <p>
-            게시글 등록, 실시간 게시판, 이미지 업로드는 Cognito 로그인 후 AWS 백엔드와 연결됩니다.
+            교내에서 잃어버리거나 습득한 물건을 등록하고, 비슷한 게시글을 확인해 주인을 찾을 수 있습니다.
           </p>
         </div>
         <div className="login-card">
-          <span>AWS backend ready</span>
-          <strong>DynamoDB와 S3 작업은 로그인 후 사용할 수 있습니다.</strong>
+          <span>학교 구성원 전용</span>
+          <strong>로그인하면 분실물 등록과 게시판 확인을 시작할 수 있습니다.</strong>
           <button type="button" onClick={() => setShowSignIn(true)}>
-            Continue with Cognito
+            로그인하고 시작하기
           </button>
         </div>
       </section>
@@ -182,7 +182,7 @@ function PublicApp() {
       <section className="grid public-grid">
         <article className="panel">
           <h2>분실물 등록</h2>
-          <p className="muted">사진은 S3에 업로드되고 게시글은 AppSync/DynamoDB에 저장됩니다.</p>
+          <p className="muted">사진과 함께 분실물 또는 습득물 정보를 간단히 등록할 수 있습니다.</p>
         </article>
         <article className="panel">
           <h2>실시간 게시판</h2>
@@ -353,28 +353,27 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
     <main className="app-shell">
       <nav className="nav">
         <div>
-          <strong>HUFS Lost & Found AWS</strong>
-          <span>Amplify · Cognito · DynamoDB · S3</span>
+          <strong>HUFS Lost & Found</strong>
+          <span>Campus lost and found service</span>
         </div>
         <div className="nav-actions">
           <div className="nav-status">{displayName}</div>
           <button className="secondary-button" type="button" onClick={signOut}>
-            Sign out
+            로그아웃
           </button>
         </div>
       </nav>
 
       <section className="hero">
         <div>
-          <p className="eyebrow">AWS migration version</p>
-          <h1>교내 분실물을 AWS 기반으로 관리합니다.</h1>
+          <p className="eyebrow">HUFS campus service</p>
+          <h1>교내 분실물과 습득물을 한곳에서 관리하세요.</h1>
           <p>
-            Cognito 인증 사용자만 게시글을 등록하고, 게시글 데이터는 AppSync/DynamoDB에 저장되며 이미지는 S3에
-            업로드됩니다.
+            물건을 등록하고, 게시판에서 비슷한 항목을 찾아보고, 확인 질문으로 주인을 더 안전하게 확인할 수 있습니다.
           </p>
         </div>
         <div className="login-card">
-          <span>Signed in with Cognito</span>
+          <span>로그인 계정</span>
           <strong>{displayName}</strong>
         </div>
       </section>
@@ -408,9 +407,9 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
             multiple
             onChange={(event) => setImageFiles(Array.from(event.target.files ?? []))}
           />
-          <p className="file-help">{imageFiles.length ? `${imageFiles.length} image file(s) selected` : 'Images upload to S3.'}</p>
+          <p className="file-help">{imageFiles.length ? `${imageFiles.length} image file(s) selected` : '사진을 추가하면 찾는 데 도움이 됩니다.'}</p>
           <input placeholder="본인 확인 질문" value={form.verificationQ} onChange={(event) => setForm({ ...form, verificationQ: event.target.value })} required />
-          <button disabled={saving}>{saving ? 'Saving to AWS...' : 'Upload to S3 & save to DynamoDB'}</button>
+          <button disabled={saving}>{saving ? '저장 중...' : '게시글 등록하기'}</button>
         </form>
 
         <section className="panel">
@@ -435,7 +434,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
         <div className="board-header">
           <div>
             <h2>실시간 게시판</h2>
-            <p className="muted">DynamoDB/AppSync에서 불러온 게시글입니다.</p>
+            <p className="muted">학교 구성원이 등록한 분실물과 습득물입니다.</p>
           </div>
           <div className="filters">
             <select value={filter} onChange={(event) => setFilter(event.target.value as ItemType | 'all')}>
@@ -452,7 +451,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
             <input placeholder="검색" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
         </div>
-        {loading ? <p className="muted">Loading AWS data...</p> : null}
+        {loading ? <p className="muted">게시글을 불러오는 중입니다...</p> : null}
         {!loading && visibleItems.length === 0 ? <p className="muted">게시글이 없습니다.</p> : null}
         <div className="cards">
           {visibleItems.map((item) => (
@@ -465,7 +464,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
                 <div><dt>Category</dt><dd>{item.category}</dd></div>
                 <div><dt>Location</dt><dd>{item.location}</dd></div>
                 <div><dt>Date</dt><dd>{item.lostDate}</dd></div>
-                <div><dt>S3 objects</dt><dd>{item.imageKeys.length}</dd></div>
+                <div><dt>Photos</dt><dd>{item.imageKeys.length}</dd></div>
               </dl>
               <p className="question">Q. {item.verificationQ}</p>
             </article>
