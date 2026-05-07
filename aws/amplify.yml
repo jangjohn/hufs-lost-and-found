@@ -1,18 +1,20 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - npm ci
-        - APP_ID="${AWS_AMPLIFY_APP_ID:-$AWS_APP_ID}"
-        - if [ -n "$APP_ID" ]; then npx ampx pipeline-deploy --branch "${AWS_BRANCH:-main}" --app-id "$APP_ID" --outputs-out-dir src; fi
-    build:
-      commands:
-        - npm run build
-  artifacts:
-    baseDirectory: dist
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
+applications:
+  - appRoot: aws
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm ci
+            - APP_ID="${AWS_AMPLIFY_APP_ID:-$AWS_APP_ID}"
+            - if [ -n "$APP_ID" ]; then npx ampx pipeline-deploy --branch "${AWS_BRANCH:-main}" --app-id "$APP_ID" --outputs-out-dir src; fi
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
