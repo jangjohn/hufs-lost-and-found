@@ -31,10 +31,11 @@ aws/
 
 ```powershell
 npm install
+npx ampx sandbox --outputs-out-dir src
 npm run dev
 ```
 
-The local UI includes a demo cache so it can be shown immediately even before cloud resources are provisioned.
+The sandbox command provisions the Cognito, AppSync/DynamoDB, and S3 resources and writes `src/amplify_outputs.json`, which the frontend uses at runtime.
 
 ## Deploy with AWS Amplify Hosting
 
@@ -45,7 +46,7 @@ The local UI includes a demo cache so it can be shown immediately even before cl
 5. Set the app root to:
 
 ```text
-lost-and-found/aws
+aws
 ```
 
 If Amplify asks for build settings, use:
@@ -57,6 +58,8 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - APP_ID="${AWS_AMPLIFY_APP_ID:-$AWS_APP_ID}"
+        - if [ -n "$APP_ID" ]; then npx ampx pipeline-deploy --branch "${AWS_BRANCH:-main}" --app-id "$APP_ID" --outputs-out-dir src; fi
     build:
       commands:
         - npm run build
@@ -80,7 +83,7 @@ npm install
 Then run:
 
 ```powershell
-npx ampx sandbox
+npx ampx sandbox --outputs-out-dir src
 ```
 
 This provisions the Amplify Gen2 backend resources in your AWS account:
@@ -88,6 +91,7 @@ This provisions the Amplify Gen2 backend resources in your AWS account:
 - Cognito user pool
 - DynamoDB-backed GraphQL API
 - S3 bucket for item images
+- `src/amplify_outputs.json` client configuration
 
 ## Assignment note
 

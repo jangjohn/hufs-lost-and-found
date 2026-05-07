@@ -29,6 +29,11 @@ button {
   font-weight: 700;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 input,
 select,
 textarea {
@@ -88,6 +93,40 @@ textarea {
   font-weight: 700;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.secondary-button {
+  border: 1px solid #dbe3ef;
+  background: white;
+  color: #0f172a;
+}
+
+.setup-screen {
+  display: grid;
+  place-items: center;
+}
+
+.setup-panel {
+  max-width: 720px;
+}
+
+.setup-panel h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.setup-panel pre {
+  overflow-x: auto;
+  border-radius: 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
@@ -126,6 +165,28 @@ textarea {
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.12);
   padding: 1rem;
+}
+
+.login-card span,
+.file-help {
+  color: #dbeafe;
+  font-size: 0.9rem;
+}
+
+.file-help {
+  margin: -0.35rem 0 0;
+  color: #64748b;
+}
+
+.error-banner {
+  width: min(1120px, 100%);
+  margin: 1rem auto 0;
+  border: 1px solid #fecaca;
+  border-radius: 1rem;
+  background: #fef2f2;
+  color: #991b1b;
+  padding: 1rem;
+  font-weight: 700;
 }
 
 .grid {
@@ -186,6 +247,15 @@ textarea {
   border-radius: 1.25rem;
   padding: 1rem;
   background: #f8fafc;
+}
+
+.card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 1rem;
+  margin-bottom: 0.85rem;
+  background: #e2e8f0;
 }
 
 .card h3 {
@@ -284,6 +354,15 @@ dd {
   .board-header,
   .filters {
     grid-template-columns: 1fr;
+  }
+
+  .nav {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nav-actions {
+    justify-content: space-between;
   }
 
   .board-header {

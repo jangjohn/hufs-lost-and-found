@@ -13,13 +13,12 @@ const schema = a.schema({
       imageKeys: a.string().array(),
       verificationQ: a.string().required(),
       verificationAHash: a.string(),
-      ownerId: a.string().required(),
       ownerName: a.string(),
       expiresAt: a.datetime(),
     })
     .authorization((allow) => [
       allow.authenticated().to(['read']),
-      allow.ownerDefinedIn('ownerId').to(['create', 'update', 'delete', 'read']),
+      allow.owner().to(['create', 'update', 'delete', 'read']),
     ]),
 
   Match: a
@@ -28,10 +27,9 @@ const schema = a.schema({
       foundItemId: a.id().required(),
       similarityScore: a.float().required(),
       status: a.enum(['pending', 'verified', 'rejected']),
-      ownerId: a.string().required(),
     })
     .authorization((allow) => [
-      allow.ownerDefinedIn('ownerId').to(['read', 'create', 'update']),
+      allow.owner().to(['read', 'create', 'update']),
     ]),
 
   VerificationAttempt: a
@@ -41,7 +39,7 @@ const schema = a.schema({
       success: a.boolean().required(),
       attemptedAt: a.datetime().required(),
     })
-    .authorization((allow) => [allow.ownerDefinedIn('userId').to(['read', 'create'])]),
+    .authorization((allow) => [allow.owner().to(['read', 'create'])]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

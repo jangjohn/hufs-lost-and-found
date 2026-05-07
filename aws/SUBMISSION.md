@@ -16,11 +16,11 @@ The existing Firebase implementation was intentionally kept unchanged for compar
 
 ## Implemented features
 
-- School email sign-in flow UI
-- Lost/found item board
-- Item creation form
+- Cognito email sign-in flow through Amplify Authenticator
+- Lost/found item board backed by Amplify Data
+- Item creation form that writes to AppSync/DynamoDB
 - Category/type/search filters
-- S3 image object field
+- Image upload to S3 through Amplify Storage
 - Matching preview based on category/location
 - Responsive web UI
 - Amplify backend resources defined as code
@@ -49,4 +49,4 @@ Result: successful Vite production build.
 
 ## Notes
 
-The UI includes local demo persistence so the application can be demonstrated immediately. The AWS backend definitions are ready for Amplify Gen2 deployment using `npx ampx sandbox` or Amplify Hosting connected to GitHub.
+Run `npx ampx sandbox --outputs-out-dir src` for local AWS testing. Amplify Hosting runs `npx ampx pipeline-deploy` during preBuild to generate the same client configuration before the Vite build.
