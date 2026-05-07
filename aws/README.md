@@ -72,6 +72,26 @@ frontend:
       - node_modules/**/*
 ```
 
+## Google sign-in setup
+
+This AWS version uses Cognito Hosted UI for Google sign-in. Before deploying
+the Google provider change, create an OAuth 2.0 Web application in Google Cloud
+Console and add this authorized redirect URI:
+
+```text
+https://82957d991e896d39e538.auth.ap-northeast-2.amazoncognito.com/oauth2/idpresponse
+```
+
+Then add the OAuth client values to the Amplify `main` branch secrets:
+
+```text
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+```
+
+The app callback and logout URLs are configured in `amplify/auth/resource.ts`
+for both local Vite development and the Amplify Hosting URL.
+
 ## Deploy backend sandbox
 
 Install dependencies first:
