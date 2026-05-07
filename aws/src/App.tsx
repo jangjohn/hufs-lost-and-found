@@ -1,4 +1,4 @@
-import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { FormEvent, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import type { AuthUser, FetchUserAttributesOutput } from 'aws-amplify/auth';
 import { fetchUserAttributes, getCurrentUser, signOut as amplifySignOut } from 'aws-amplify/auth';
@@ -127,6 +127,18 @@ function ownerLabel(user: AuthUser, attributes: FetchUserAttributesOutput | null
   return attributes?.email ?? user.signInDetails?.loginId ?? user.username;
 }
 
+function AuthLoadingScreen() {
+  return (
+    <main className="app-shell setup-screen">
+      <section className="panel setup-panel" aria-live="polite">
+        <p className="eyebrow">Session check</p>
+        <h1>로그인 상태를 확인하는 중입니다.</h1>
+        <p className="muted">잠시만 기다려주세요.</p>
+      </section>
+    </main>
+  );
+}
+
 function SetupScreen() {
   return (
     <main className="app-shell setup-screen">
@@ -149,6 +161,18 @@ function SetupScreen() {
 
 function PublicApp() {
   const [showSignIn, setShowSignIn] = useState(false);
+  const authPanelRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!showSignIn) return;
+
+    authPanelRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, [showSignIn]);
+
+  const openSignIn = () => setShowSignIn(true);
 
   return (
     <main className="app-shell">
@@ -157,7 +181,7 @@ function PublicApp() {
           <strong>HUFS Lost & Found</strong>
           <span>한국외국어대학교 캠퍼스 분실물 게시판</span>
         </div>
-        <button className="secondary-button" type="button" onClick={() => setShowSignIn(true)}>
+        <button className="secondary-button" type="button" onClick={openSignIn}>
           로그인
         </button>
       </nav>
@@ -168,10 +192,10 @@ function PublicApp() {
           <h1>찾는 사람과 발견한 사람을 빠르게 연결합니다.</h1>
           <p>분실물과 습득물을 한곳에 등록하고, 사진과 장소 정보를 바탕으로 비슷한 게시글을 확인하세요.</p>
           <div className="hero-actions">
-            <button type="button" onClick={() => setShowSignIn(true)}>
+            <button type="button" onClick={openSignIn}>
               분실물 찾기
             </button>
-            <button className="secondary-button" type="button" onClick={() => setShowSignIn(true)}>
+            <button className="secondary-button" type="button" onClick={openSignIn}>
               습득물 등록
             </button>
           </div>
@@ -197,24 +221,24 @@ function PublicApp() {
 
       <section className="grid public-grid" aria-label="주요 기능">
         <article className="feature-tile">
-          <span className="tile-icon">?</span>
+          <span className="tile-icon" aria-hidden="true">?</span>
           <h2>잃어버렸나요?</h2>
           <p>게시판을 검색하고, 아직 없다면 분실 신고를 남겨두세요.</p>
         </article>
         <article className="feature-tile">
-          <span className="tile-icon">+</span>
+          <span className="tile-icon" aria-hidden="true">+</span>
           <h2>무언가를 찾았나요?</h2>
           <p>습득 장소와 사진만 빠르게 등록해도 주인이 찾을 가능성이 커집니다.</p>
         </article>
         <article className="feature-tile">
-          <span className="tile-icon">=</span>
+          <span className="tile-icon" aria-hidden="true">=</span>
           <h2>비슷한 항목 비교</h2>
           <p>카테고리, 장소, 날짜가 가까운 후보를 한눈에 비교합니다.</p>
         </article>
       </section>
 
       {showSignIn ? (
-        <section className="auth-panel" aria-label="로그인">
+        <section className="auth-panel" aria-label="로그인" ref={authPanelRef}>
           <Suspense fallback={<p className="auth-loading">로그인 화면을 불러오는 중입니다...</p>}>
             <AuthPanel />
           </Suspense>
@@ -236,8 +260,17 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const entryPanelRef = useRef<HTMLFormElement | null>(null);
 
   const displayName = ownerLabel(user, attributes);
+
+  const setEntryType = (type: ItemType) => {
+    setForm((current) => ({ ...current, type }));
+    entryPanelRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -358,7 +391,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
           <span>캠퍼스 분실물 게시판</span>
         </div>
         <div className="nav-actions">
-          <div className="nav-status">{displayName}</div>
+          <div className="nav-status" title={displayName}>{displayName}</div>
           <button className="secondary-button" type="button" onClick={signOut}>
             로그아웃
           </button>
@@ -372,10 +405,10 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
           <p>사진, 위치, 날짜를 중심으로 항목을 정리해 학교 구성원이 더 쉽게 찾아볼 수 있게 합니다.</p>
         </div>
         <div className="quick-actions" aria-label="빠른 작업">
-          <button type="button" onClick={() => setForm((current) => ({ ...current, type: 'lost' }))}>
+          <button type="button" onClick={() => setEntryType('lost')}>
             분실물 신고
           </button>
-          <button className="secondary-button" type="button" onClick={() => setForm((current) => ({ ...current, type: 'found' }))}>
+          <button className="secondary-button" type="button" onClick={() => setEntryType('found')}>
             습득물 등록
           </button>
         </div>
@@ -404,10 +437,10 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
         </article>
       </section>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {error ? <div className="error-banner" role="alert">{error}</div> : null}
 
       <section className="workspace-grid">
-        <form className="entry-panel" onSubmit={createItem}>
+        <form className="entry-panel" onSubmit={createItem} ref={entryPanelRef}>
           <div className="section-heading">
             <p className="eyebrow">새 게시글</p>
             <h2>{form.type === 'lost' ? '무엇을 잃어버렸나요?' : '무엇을 발견했나요?'}</h2>
@@ -511,7 +544,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
             {visibleItems.map((item) => (
               <article className="item-card" key={item.id}>
                 {item.imageUrls[0] ? (
-                  <img className="card-image" src={item.imageUrls[0]} alt="" />
+                  <img className="card-image" src={item.imageUrls[0]} alt={`${item.title} 사진`} />
                 ) : (
                   <div className="card-image placeholder-image">{getCategoryLabel(item.category)}</div>
                 )}
@@ -572,7 +605,7 @@ function App() {
 }
 
 function AppContent() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -599,6 +632,10 @@ function AppContent() {
       cancelHubListener();
     };
   }, []);
+
+  if (user === undefined) {
+    return <AuthLoadingScreen />;
+  }
 
   if (!user) {
     return <PublicApp />;

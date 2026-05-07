@@ -10,6 +10,10 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
 }
@@ -34,6 +38,14 @@ button {
 button:disabled {
   cursor: wait;
   opacity: 0.64;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.34);
+  outline-offset: 2px;
 }
 
 input,
@@ -95,6 +107,7 @@ label span {
 .nav strong,
 .nav span {
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .nav strong {
@@ -194,6 +207,7 @@ label span {
   color: #102033;
   font-size: clamp(2rem, 4vw, 3.75rem);
   line-height: 1.08;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy p {
@@ -201,6 +215,7 @@ label span {
   margin: 0;
   color: #4c5b6f;
   line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -383,6 +398,7 @@ label span {
 .section-heading h2,
 .section-heading p {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .section-heading h2 {
@@ -533,6 +549,7 @@ label span {
 .item-card h3,
 .item-card p {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .item-card h3 {
@@ -565,6 +582,7 @@ dd {
   margin: 0;
   font-weight: 800;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .question {
@@ -599,6 +617,7 @@ dd {
   margin: 0;
   color: #102033;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .match p + p {

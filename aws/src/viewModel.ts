@@ -88,9 +88,9 @@ export function buildMatchCandidates(items: BoardItem[]): MatchCandidate[] {
     found
       .map((foundItem): MatchCandidate | null => {
         const reasons = [
-          lostItem.category === foundItem.category ? 'Same category' : '',
-          nearbyPlace(lostItem.location, foundItem.location) ? 'Similar place' : '',
-          sameDay(lostItem.lostDate, foundItem.lostDate) ? 'Same day' : '',
+          lostItem.category === foundItem.category ? '분류 일치' : '',
+          nearbyPlace(lostItem.location, foundItem.location) ? '장소 유사' : '',
+          sameDay(lostItem.lostDate, foundItem.lostDate) ? '날짜 일치' : '',
         ].filter(Boolean);
 
         if (reasons.length === 0) return null;

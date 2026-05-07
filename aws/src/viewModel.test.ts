@@ -79,7 +79,7 @@ describe('board view model', () => {
         lostTitle: 'Black wallet',
         foundTitle: 'Wallet found near library',
         similarityScore: 0.91,
-        reasons: ['Same category', 'Similar place', 'Same day'],
+        reasons: ['분류 일치', '장소 유사', '날짜 일치'],
         status: 'pending',
       },
     ]);
