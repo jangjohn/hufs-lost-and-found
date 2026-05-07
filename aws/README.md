@@ -85,6 +85,7 @@ https://82957d991e896d39e538.auth.ap-northeast-2.amazoncognito.com/oauth2/idpres
 Then add the OAuth client values to the Amplify `main` branch secrets:
 
 ```text
+ENABLE_GOOGLE_SIGN_IN=true
 GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET
 ```
