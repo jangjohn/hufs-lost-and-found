@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Authenticator } from '@aws-amplify/ui-react';
+import { Authenticator, useAuthenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { generateClient } from 'aws-amplify/api';
 import type { AuthUser, FetchUserAttributesOutput } from 'aws-amplify/auth';
@@ -143,6 +143,62 @@ function SetupScreen() {
           Amplify Hosting에서는 빌드 설정이 pipeline-deploy를 실행해 같은 파일을 생성하도록 구성되어 있습니다.
         </p>
       </section>
+    </main>
+  );
+}
+
+function PublicApp() {
+  const [showSignIn, setShowSignIn] = useState(false);
+
+  return (
+    <main className="app-shell">
+      <nav className="nav">
+        <div>
+          <strong>HUFS Lost & Found AWS</strong>
+          <span>Amplify · Cognito · DynamoDB · S3</span>
+        </div>
+        <button className="secondary-button" type="button" onClick={() => setShowSignIn(true)}>
+          Sign in
+        </button>
+      </nav>
+
+      <section className="hero">
+        <div>
+          <p className="eyebrow">AWS migration version</p>
+          <h1>교내 분실물 서비스를 먼저 둘러보세요.</h1>
+          <p>
+            게시글 등록, 실시간 게시판, 이미지 업로드는 Cognito 로그인 후 AWS 백엔드와 연결됩니다.
+          </p>
+        </div>
+        <div className="login-card">
+          <span>AWS backend ready</span>
+          <strong>DynamoDB와 S3 작업은 로그인 후 사용할 수 있습니다.</strong>
+          <button type="button" onClick={() => setShowSignIn(true)}>
+            Continue with Cognito
+          </button>
+        </div>
+      </section>
+
+      <section className="grid public-grid">
+        <article className="panel">
+          <h2>분실물 등록</h2>
+          <p className="muted">사진은 S3에 업로드되고 게시글은 AppSync/DynamoDB에 저장됩니다.</p>
+        </article>
+        <article className="panel">
+          <h2>실시간 게시판</h2>
+          <p className="muted">로그인한 학교 구성원이 등록된 분실물과 습득물을 확인합니다.</p>
+        </article>
+        <article className="panel">
+          <h2>자동 매칭</h2>
+          <p className="muted">카테고리와 장소를 기준으로 분실물과 습득물 후보를 계산합니다.</p>
+        </article>
+      </section>
+
+      {showSignIn ? (
+        <section className="panel auth-panel">
+          <Authenticator loginMechanisms={['email']} />
+        </section>
+      ) : null}
     </main>
   );
 }
@@ -426,8 +482,22 @@ function App() {
   }
 
   return (
+    <Authenticator.Provider>
+      <AppContent />
+    </Authenticator.Provider>
+  );
+}
+
+function AppContent() {
+  const { authStatus } = useAuthenticator((context) => [context.authStatus]);
+
+  if (authStatus !== 'authenticated') {
+    return <PublicApp />;
+  }
+
+  return (
     <Authenticator loginMechanisms={['email']}>
-      {({ signOut, user }) => (user ? <AuthenticatedApp signOut={() => signOut?.()} user={user} /> : <></>)}
+      {({ signOut, user }) => (user ? <AuthenticatedApp signOut={() => signOut?.()} user={user} /> : <PublicApp />)}
     </Authenticator>
   );
 }

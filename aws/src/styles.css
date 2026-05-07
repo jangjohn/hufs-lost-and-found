@@ -194,6 +194,16 @@ textarea {
   margin: 1rem auto 0;
 }
 
+.public-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.auth-panel {
+  margin-top: 1rem;
+}
+
 .two-columns {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -350,6 +360,7 @@ dd {
 @media (max-width: 880px) {
   .hero,
   .two-columns,
+  .public-grid,
   .cards,
   .board-header,
   .filters {
