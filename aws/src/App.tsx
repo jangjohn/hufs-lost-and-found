@@ -497,12 +497,19 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
           <label className="upload-field">
             <span>사진</span>
             <input
+              className="file-input"
               key={fileInputKey}
               type="file"
               accept="image/*"
               multiple
               onChange={(event) => setImageFiles(Array.from(event.target.files ?? []))}
             />
+            <span className="upload-control">
+              <span className="upload-button">사진 선택</span>
+              <span className="upload-name">
+                {imageFiles.length ? `${imageFiles.length}개 파일 선택됨` : '선택된 파일 없음'}
+              </span>
+            </span>
           </label>
           <p className="file-help">{imageFiles.length ? `${imageFiles.length}개 사진 선택됨` : '사진이 없더라도 등록할 수 있습니다.'}</p>
 

@@ -52,11 +52,22 @@ input,
 select,
 textarea {
   width: 100%;
+  min-width: 0;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
   background: white;
   color: #18212f;
   padding: 0.78rem 0.85rem;
+}
+
+input[type="date"] {
+  min-width: 0;
+  padding-right: 0.65rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  flex: 0 0 auto;
+  margin-left: 0.25rem;
 }
 
 textarea {
@@ -67,6 +78,7 @@ textarea {
 label {
   display: grid;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 label span {
@@ -440,6 +452,10 @@ label span {
   gap: 0.65rem;
 }
 
+.row > label {
+  min-width: 0;
+}
+
 .filters {
   grid-template-columns: 130px 150px minmax(180px, 1fr);
 }
@@ -448,6 +464,60 @@ label span {
   margin: -0.4rem 0 0;
   color: #66758a;
   font-size: 0.84rem;
+}
+
+.upload-field {
+  cursor: pointer;
+}
+
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.upload-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: white;
+  padding: 0.62rem;
+}
+
+.upload-button {
+  display: inline-grid;
+  min-height: 2.25rem;
+  place-items: center;
+  border-radius: 999px;
+  background: #102033;
+  color: white;
+  padding: 0 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.upload-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #526176;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-input:focus-visible + .upload-control {
+  outline: 3px solid rgba(15, 118, 110, 0.34);
+  outline-offset: 2px;
 }
 
 .submit-button {
