@@ -17,7 +17,7 @@ const schema = a.schema({
       expiresAt: a.datetime(),
     })
     .authorization((allow) => [
-      allow.authenticated().to(['read', 'delete']),
+      allow.authenticated().to(['read']),
       allow.owner().to(['create', 'update', 'delete', 'read']),
     ]),
 
