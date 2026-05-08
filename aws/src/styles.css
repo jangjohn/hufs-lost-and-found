@@ -456,6 +456,10 @@ label span {
   min-width: 0;
 }
 
+.entry-panel .row {
+  grid-template-columns: 1fr;
+}
+
 .filters {
   grid-template-columns: 130px 150px minmax(180px, 1fr);
 }
