@@ -6,7 +6,7 @@ import { getUrl, uploadData } from 'aws-amplify/storage';
 import { Hub } from 'aws-amplify/utils';
 import type { Schema } from '../amplify/data/resource';
 import { amplifyConfigured } from './amplifyClient';
-import { shouldRefreshAuthUser } from './authState';
+import { resolveAuthUser, shouldRefreshAuthUser } from './authState';
 import {
   buildItemImagePath,
   categories,
@@ -611,12 +611,8 @@ function AppContent() {
     let active = true;
 
     async function refreshUser() {
-      try {
-        const nextUser = await getCurrentUser();
-        if (active) setUser(nextUser);
-      } catch {
-        if (active) setUser(null);
-      }
+      const nextUser = await resolveAuthUser(getCurrentUser);
+      if (active) setUser(nextUser);
     }
 
     refreshUser();

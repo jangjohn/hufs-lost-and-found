@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { shouldRefreshAuthUser } from './authState';
+import { describe, expect, it, vi } from 'vitest';
+import { resolveAuthUser, shouldRefreshAuthUser } from './authState';
 
 describe('auth state helpers', () => {
   it('refreshes the current user after auth state changes', () => {
@@ -12,5 +12,20 @@ describe('auth state helpers', () => {
   it('ignores unrelated hub events', () => {
     expect(shouldRefreshAuthUser('configured')).toBe(false);
     expect(shouldRefreshAuthUser(undefined)).toBe(false);
+  });
+
+  it('falls back to null when the auth lookup stalls', async () => {
+    vi.useFakeTimers();
+
+    const result = resolveAuthUser(
+      () => new Promise<unknown>(() => {}),
+      1_500,
+    );
+
+    await vi.advanceTimersByTimeAsync(1_500);
+
+    await expect(result).resolves.toBeNull();
+
+    vi.useRealTimers();
   });
 });
