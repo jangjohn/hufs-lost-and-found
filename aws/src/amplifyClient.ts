@@ -1,4 +1,5 @@
 import { Amplify, type ResourcesConfig } from 'aws-amplify';
+import 'aws-amplify/auth/enable-oauth-listener';
 
 const outputModules = import.meta.glob('./amplify_outputs.json', {
   eager: true,
