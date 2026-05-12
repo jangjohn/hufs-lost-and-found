@@ -5,10 +5,10 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions",
-    "shell": "npm run build && firebase functions:shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "serve": "npm run build && cd .. && firebase emulators:start --only functions",
+    "shell": "npm run build && cd .. && firebase functions:shell",
+    "deploy": "cd .. && firebase deploy --only functions",
+    "logs": "cd .. && firebase functions:log"
   },
   "engines": {
     "node": "22"

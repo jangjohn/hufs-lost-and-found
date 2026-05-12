@@ -1,6 +1,6 @@
 # HUFS Lost & Found AWS Version
 
-This folder is an isolated AWS submission version of the HUFS Lost & Found project. It does not replace or modify the original Firebase implementation.
+This folder is an isolated AWS submission version of the HUFS Lost & Found project. It does not replace or modify the original Firebase implementation, which is kept under `../firebase/`.
 
 ## AWS architecture
 
@@ -116,4 +116,4 @@ This provisions the Amplify Gen2 backend resources in your AWS account:
 
 ## Assignment note
 
-This is an AWS-only project folder created for the migration submission. The original Firebase implementation remains in the parent project for comparison.
+This is an AWS-only project folder created for the migration submission. The original Firebase implementation remains in `../firebase/` for comparison.

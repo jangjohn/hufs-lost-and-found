@@ -4,7 +4,7 @@
 
 A separate AWS version of the HUFS Lost & Found application was created under `aws/`.
 
-The existing Firebase implementation was intentionally kept unchanged for comparison.
+The existing Firebase implementation was intentionally kept under `firebase/` for comparison.
 
 ## AWS services used
 
