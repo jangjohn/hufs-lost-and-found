@@ -10,6 +10,8 @@ import { resolveAuthUser, shouldRefreshAuthUser } from './authState';
 import {
   buildItemImagePath,
   categories,
+  createVerificationSalt,
+  hashVerificationAnswer,
   toDateInputValue,
   toItemCreateInput,
   type ItemCategory,
@@ -68,6 +70,7 @@ function createDefaultForm(): ItemFormState {
     location: '',
     lostDate: new Date().toISOString().slice(0, 10),
     verificationQ: '',
+    verificationA: '',
   };
 }
 
@@ -260,6 +263,9 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [verificationAnswers, setVerificationAnswers] = useState<Record<string, string>>({});
+  const [verificationMessages, setVerificationMessages] = useState<Record<string, string>>({});
+  const [verifyingItemId, setVerifyingItemId] = useState<string | null>(null);
   const entryPanelRef = useRef<HTMLFormElement | null>(null);
 
   const displayName = ownerLabel(user, attributes);
@@ -354,14 +360,26 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
         imageKeys.push(uploadResult.path);
       }
 
+      const salt = createVerificationSalt();
+      const answerHash = await hashVerificationAnswer(form.verificationA, salt);
       const payload = toItemCreateInput(form, imageKeys, displayName);
       const response = await client.models.Item.create({
         id: itemId,
-        ...payload,
+        ...payload
       });
-
+      
       if (response.errors?.length) {
         throw new Error(response.errors.map((itemError) => itemError.message).join(', '));
+      }
+      
+      const secretResponse = await client.models.VerificationSecret.create({
+        itemId,
+        salt,
+        answerHash
+      });
+      
+      if (secretResponse.errors?.length) {
+        throw new Error(secretResponse.errors.map((secretError) => secretError.message).join(', '));
       }
 
       const createdItem = response.data
@@ -380,6 +398,52 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
       setError(toMessage(nextError));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const verifyItem = async (event: FormEvent, itemId: string) => {
+    event.preventDefault();
+    
+    if (!client || verifyingItemId) return;
+    
+    const answer = verificationAnswers[itemId]?.trim();
+    
+    if (!answer) {
+      setVerificationMessages((current) => ({
+        ...current,
+        [itemId]: '답변을 입력하세요.',
+      }));
+      return;
+    }
+    
+    setVerifyingItemId(itemId);
+    
+    try {
+      const response = await client.mutations.verifyAnswer({
+        itemId,
+        answer
+      });
+      
+      if (response.errors?.length) {
+        throw new Error(response.errors.map((itemError) => itemError.message).join(', '));
+      }
+      
+      setVerificationMessages((current) => ({
+        ...current,
+        [itemId]: response.data?.message ?? '검증이 완료되었습니다.',
+      }));
+      
+      setVerificationAnswers((current) => ({
+        ...current,
+        [itemId]: ''
+      }));
+    } catch (nextError) {
+      setVerificationMessages((current) => ({
+        ...current,
+        [itemId]: toMessage(nextError)
+      }));
+    } finally {
+      setVerifyingItemId(null);
     }
   };
 
@@ -518,6 +582,11 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
             <input placeholder="예: 지갑 안 학생증의 색상은?" value={form.verificationQ} onChange={(event) => setForm({ ...form, verificationQ: event.target.value })} required />
           </label>
 
+          <label>
+            <span>정답</span>
+            <input type="text" placeholder="예: 파란색" value={form.verificationA} onChange={(event) => setForm({ ...form, verificationA: event.target.value })} required />
+          </label>
+
           <button className="submit-button" disabled={saving}>{saving ? '저장 중...' : `${typeLabels[form.type]} 게시글 등록`}</button>
         </form>
 
@@ -568,6 +637,28 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
                     <div><dt>사진</dt><dd>{item.imageKeys.length}</dd></div>
                   </dl>
                   <p className="question">확인 질문: {item.verificationQ}</p>
+                  <form className="verify-form" onSubmit={(event) => verifyItem(event, item.id)}>
+                    <input
+                      type="password"
+                      placeholder="답변 입력"
+                      value={verificationAnswers[item.id] ?? ''}
+                      onChange={(event) =>
+                        setVerificationAnswers((current) => ({
+                          ...current,
+                          [item.id]: event.target.value,
+                        }))
+                      }
+                    />
+                    <button type="submit" disabled={verifyingItemId === item.id}>
+                      {verifyingItemId === item.id ? '확인 중...' : '본인 확인'}
+                    </button>
+                  </form>
+
+                  {verificationMessages[item.id] ? (
+                    <p className="verification-message">
+                      {verificationMessages[item.id]}
+                    </p>
+                  ) : null}
                 </div>
               </article>
             ))}

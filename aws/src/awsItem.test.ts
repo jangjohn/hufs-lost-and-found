@@ -12,6 +12,7 @@ describe('AWS item helpers', () => {
         location: 'Library',
         lostDate: '2026-05-07',
         verificationQ: 'What brand is it?',
+        verificationA: 'hermes'
       },
       ['item-images/ap-northeast-2:abc/item-1/wallet.jpg'],
       'student@hufs.ac.kr',
@@ -43,6 +44,7 @@ describe('AWS item helpers', () => {
           location: 'Student Center',
           lostDate: 'not-a-date',
           verificationQ: 'What case color?',
+          verificationA: 'black'
         },
         [],
         'student@hufs.ac.kr',

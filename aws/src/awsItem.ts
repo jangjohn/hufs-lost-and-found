@@ -10,14 +10,15 @@ export interface ItemFormState {
   location: string;
   lostDate: string;
   verificationQ: string;
+  verificationA: string;
 }
 
-export interface ItemCreateInput extends ItemFormState {
+export type ItemCreateInput = Omit<ItemFormState, 'verificationA'> & {
   status: 'active';
   lostDate: string;
   imageKeys: string[];
   ownerName: string;
-}
+};
 
 export const categories: ItemCategory[] = ['wallet', 'phone', 'card', 'key', 'bag', 'book', 'electronics', 'clothing', 'other'];
 
@@ -34,6 +35,24 @@ export function toAmplifyDateTime(dateOnly: string) {
 export function toDateInputValue(dateTime?: string | null) {
   if (!dateTime) return '';
   return dateTime.slice(0, 10);
+}
+
+export function createVerificationSalt() {
+  return crypto.randomUUID();
+}
+
+function normalizeVerificationAnswer(answer: string) {
+  return answer.trim().toLowerCase();
+}
+
+export async function hashVerificationAnswer(answer: string, salt: string) {
+  const source = `${salt}:${normalizeVerificationAnswer(answer)}`;
+  const bytes = new TextEncoder().encode(source);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 export function sanitizeStorageFileName(fileName: string) {
@@ -61,9 +80,15 @@ export function buildItemImagePath(itemId: string, fileName: string) {
   };
 }
 
-export function toItemCreateInput(form: ItemFormState, imageKeys: string[], ownerName: string): ItemCreateInput {
+export function toItemCreateInput(
+  form: ItemFormState,
+  imageKeys: string[],
+  ownerName: string,
+): ItemCreateInput {
+  const { verificationA: _verificationA, ...itemFields } = form;
+
   return {
-    ...form,
+    ...itemFields,
     status: 'active',
     lostDate: toAmplifyDateTime(form.lostDate),
     imageKeys,
