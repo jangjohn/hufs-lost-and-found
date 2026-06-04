@@ -1,11 +1,16 @@
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import { getAmplifyDataClientConfig } from '@aws-amplify/backend/function/runtime';
-import { env } from '$amplify/env/verify-answer';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { Schema } from '../resource';
 
-const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+// Use process.env directly (populated at runtime by Amplify Lambda shims + function env injection).
+// This avoids the $amplify/env/* virtual module import which can fail to resolve during esbuild bundling in ampx sandbox.
+// getAmplifyDataClientConfig accepts it (with cast) because the required DataClientEnv keys are present in process.env at execution time.
+const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(
+  // @ts-expect-error - process.env is augmented by Amplify at runtime with AMPLIFY_DATA_* and AWS_* keys; virtual env import avoided for bundler compatibility.
+  process.env
+);
 
 Amplify.configure(resourceConfig, libraryOptions);
 
