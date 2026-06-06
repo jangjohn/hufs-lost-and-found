@@ -1,8 +1,24 @@
-import { type ClientSchema, a, defineData, defineFunction } from '@aws-amplify/backend';
+import { type ClientSchema, a, defineData, defineFunction, secret } from '@aws-amplify/backend';
 
 const verifyAnswerHandler = defineFunction({
   name: 'verify-answer',
   entry: './verify-answer/handler.ts',
+});
+
+const analyzeImageHandler = defineFunction({
+  name: 'analyze-image',
+  entry: './analyze-image/handler.ts',
+});
+
+const matchItemHandler = defineFunction({
+  name: 'match-item',
+  entry: './match-item/handler.ts',
+  timeoutSeconds: 30,
+  environment: {
+    OPENAI_API_KEY: secret('OPENAI_API_KEY'),
+    PINECONE_API_KEY: secret('PINECONE_API_KEY'),
+    PINECONE_INDEX: secret('PINECONE_INDEX'),
+  },
 });
 
 const schema = a
@@ -23,6 +39,34 @@ const schema = a
       .authorization((allow) => [allow.authenticated()])
       .handler(a.handler.function(verifyAnswerHandler)),
 
+    AnalyzeImageLabelsResult: a.customType({
+      success: a.boolean().required(),
+      message: a.string().required(),
+    }),
+
+    GenerateMatchesResult: a.customType({
+      success: a.boolean().required(),
+      message: a.string().required(),
+    }),
+
+    analyzeImageLabels: a
+      .mutation()
+      .arguments({
+        itemId: a.id().required(),
+      })
+      .returns(a.ref('AnalyzeImageLabelsResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(analyzeImageHandler)),
+
+    generateMatches: a
+      .mutation()
+      .arguments({
+        itemId: a.id().required(),
+      })
+      .returns(a.ref('GenerateMatchesResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(matchItemHandler)),
+
     Item: a
       .model({
         type: a.enum(['lost', 'found']),
@@ -33,6 +77,8 @@ const schema = a
         location: a.string().required(),
         lostDate: a.datetime().required(),
         imageKeys: a.string().array(),
+        visionLabels: a.string().array(),
+        embeddingId: a.string(),
 
         verificationQ: a.string().required(),
 
@@ -79,6 +125,8 @@ const schema = a
   })
   .authorization((allow) => [
     allow.resource(verifyAnswerHandler).to(['query', 'mutate']),
+    allow.resource(analyzeImageHandler).to(['query', 'mutate']),
+    allow.resource(matchItemHandler).to(['query', 'mutate']),
   ]);
 
 export type Schema = ClientSchema<typeof schema>;

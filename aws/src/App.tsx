@@ -382,6 +382,10 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
         throw new Error(secretResponse.errors.map((secretError) => secretError.message).join(', '));
       }
 
+      client.mutations.analyzeImageLabels({ itemId })
+        .then(() => client.mutations.generateMatches({ itemId }))
+        .catch((error) => console.warn('AI processing failed:', error));
+
       const createdItem = response.data
         ? await hydrateItem(response.data as AmplifyItemRecord)
         : await hydrateItem({
