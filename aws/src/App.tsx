@@ -383,9 +383,8 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
       }
 
       client.mutations.analyzeImageLabels({ itemId })
-        .catch((error) => console.warn('Image analysis failed:', error))
         .then(() => client.mutations.generateMatches({ itemId }))
-        .catch((error) => console.warn('AI matching failed:', error));
+        .catch((error) => console.warn('AI processing failed:', error));
 
       const createdItem = response.data
         ? await hydrateItem(response.data as AmplifyItemRecord)
