@@ -1,19 +1,24 @@
 import { type ClientSchema, a, defineData, defineFunction, secret } from '@aws-amplify/backend';
 
+// 아래 함수들은 data 리졸버이자 data API 를 호출하므로(allow.resource) data 스택에 배치한다.
+// 독립 function 스택에 두면 data↔function 순환 의존성으로 CFN 배포가 실패한다.
 const verifyAnswerHandler = defineFunction({
   name: 'verify-answer',
   entry: './verify-answer/handler.ts',
+  resourceGroupName: 'data',
 });
 
 const analyzeImageHandler = defineFunction({
   name: 'analyze-image',
   entry: './analyze-image/handler.ts',
+  resourceGroupName: 'data',
 });
 
 const matchItemHandler = defineFunction({
   name: 'match-item',
   entry: './match-item/handler.ts',
   timeoutSeconds: 30,
+  resourceGroupName: 'data',
   environment: {
     OPENAI_API_KEY: secret('OPENAI_API_KEY'),
     PINECONE_API_KEY: secret('PINECONE_API_KEY'),
