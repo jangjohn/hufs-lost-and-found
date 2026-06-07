@@ -12,7 +12,7 @@ describe('AWS item helpers', () => {
         location: 'Library',
         lostDate: '2026-05-07',
         verificationQ: 'What brand is it?',
-        verificationA: 'hermes'
+        verificationA: 'hermes',
       },
       ['item-images/ap-northeast-2:abc/item-1/wallet.jpg'],
       'student@hufs.ac.kr',
@@ -31,6 +31,8 @@ describe('AWS item helpers', () => {
       ownerName: 'student@hufs.ac.kr',
     });
     expect(payload).not.toHaveProperty('ownerId');
+    // 평문 답변은 Item.create 입력에 포함되지 않아야 한다.
+    expect(payload).not.toHaveProperty('verificationA');
   });
 
   it('rejects invalid date values before calling Amplify Data', () => {
@@ -44,7 +46,7 @@ describe('AWS item helpers', () => {
           location: 'Student Center',
           lostDate: 'not-a-date',
           verificationQ: 'What case color?',
-          verificationA: 'black'
+          verificationA: 'black',
         },
         [],
         'student@hufs.ac.kr',

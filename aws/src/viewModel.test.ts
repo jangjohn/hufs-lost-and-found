@@ -16,6 +16,7 @@ const items: BoardItem[] = [
     imageUrls: [],
     verificationQ: 'What color is the ID card sleeve?',
     ownerName: 'student@hufs.ac.kr',
+    ownerId: 'sub-student::student@hufs.ac.kr',
     createdAt: '2026-05-07T09:00:00.000Z',
   },
   {
@@ -31,6 +32,7 @@ const items: BoardItem[] = [
     imageUrls: [],
     verificationQ: 'What is inside?',
     ownerName: 'staff@hufs.ac.kr',
+    ownerId: 'sub-staff::staff@hufs.ac.kr',
     createdAt: '2026-05-07T10:00:00.000Z',
   },
   {
@@ -46,6 +48,7 @@ const items: BoardItem[] = [
     imageUrls: [],
     verificationQ: 'How many keys?',
     ownerName: 'staff@hufs.ac.kr',
+    ownerId: 'sub-staff::staff@hufs.ac.kr',
     createdAt: '2026-05-06T10:00:00.000Z',
   },
 ];

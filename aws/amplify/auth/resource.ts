@@ -1,4 +1,5 @@
 import { defineAuth, secret } from '@aws-amplify/backend';
+import { preSignUp } from './pre-sign-up/resource';
 
 declare const process: {
   env: Record<string, string | undefined>;
@@ -28,5 +29,9 @@ export const auth = defineAuth({
           },
         }
       : {}),
+  },
+  // .ac.kr 학교 이메일만 가입 허용 — 이메일/비밀번호 및 소셜(Google) 가입 모두 적용.
+  triggers: {
+    preSignUp,
   },
 });

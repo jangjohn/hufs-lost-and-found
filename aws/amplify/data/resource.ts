@@ -39,6 +39,18 @@ const schema = a
       .authorization((allow) => [allow.authenticated()])
       .handler(a.handler.function(verifyAnswerHandler)),
 
+    // 발행자(owner)가 자기 글의 정답을 서버에서 salt 해시해 VerificationSecret 에 저장.
+    // owner 검증은 함수 내부에서 수행. 같은 verify-answer Lambda 가 fieldName 으로 분기 처리.
+    setVerificationAnswer: a
+      .mutation()
+      .arguments({
+        itemId: a.id().required(),
+        answer: a.string().required(),
+      })
+      .returns(a.ref('VerifyAnswerResult'))
+      .authorization((allow) => [allow.authenticated()])
+      .handler(a.handler.function(verifyAnswerHandler)),
+
     AnalyzeImageLabelsResult: a.customType({
       success: a.boolean().required(),
       message: a.string().required(),
@@ -90,6 +102,8 @@ const schema = a
         allow.owner().to(['create', 'update', 'delete', 'read']),
       ]),
 
+    // 정답 해시 + salt 는 별도 owner 전용 모델에 저장(비-owner 는 접근 불가).
+    // 발행은 서버 setVerificationAnswer 가, 검증은 verify-answer 함수가 IAM(allow.resource)으로 읽는다.
     VerificationSecret: a
       .model({
         itemId: a.id().required(),

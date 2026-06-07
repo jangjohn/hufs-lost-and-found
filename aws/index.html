@@ -1,9 +1,29 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>HUFS Lost & Found</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+    <script>
+      // 防止暗色模式首屏闪烁：在样式应用前根据存储偏好设置 data-theme
+      (function () {
+        try {
+          var saved = localStorage.getItem('hufs-theme');
+          document.documentElement.dataset.theme =
+            saved === 'dark' || saved === 'light'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        } catch (e) {
+          /* localStorage 不可用时回退浅色 */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

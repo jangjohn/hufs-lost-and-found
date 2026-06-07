@@ -9,3 +9,16 @@ firebase-debug.*.log
 *.local
 firebase-sa-key.json
 *sa-key*.json
+
+# OS
+.DS_Store
+
+# Claude Design 落地过程产物（设计稿 / 提示词 / 导出包 / 交接说明，不进仓库）
+*.zip
+aws/DESIGN_PROMPT*.md
+aws/HANDOFF*.md
+aws/design/
+.claude/
+
+# 本地工具产物
+.firecrawl/

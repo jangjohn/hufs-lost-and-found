@@ -13,6 +13,8 @@ export interface BoardItem {
   imageUrls: string[];
   verificationQ: string;
   ownerName: string;
+  // Amplify 암시적 owner 필드(`${sub}::${username}`). 본인 글 판별용. 해시 등 민감정보 아님.
+  ownerId: string;
   createdAt: string;
 }
 
