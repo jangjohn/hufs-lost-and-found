@@ -46,6 +46,24 @@ type AmplifyItemRecord = {
 const client = amplifyConfigured ? generateClient<Schema>() : null;
 const AuthPanel = lazy(() => import('./AuthPanel'));
 
+// owner 는 allow.owner() 의 암시적 필드라 기본 selection set 에 포함되지 않는다(model_introspection 에 없음).
+// isOwnItem(본인 글 판별)이 동작하려면 owner 를 명시적으로 요청해야 한다. normalizeItem 이 읽는 필드를 모두 포함한다.
+const itemSelectionSet = [
+  'id',
+  'type',
+  'status',
+  'category',
+  'title',
+  'description',
+  'location',
+  'lostDate',
+  'imageKeys',
+  'verificationQ',
+  'ownerName',
+  'owner',
+  'createdAt',
+] as const;
+
 const typeLabels: Record<ItemType, string> = {
   lost: '분실',
   found: '습득',
@@ -633,6 +651,7 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
     try {
       const response = await client.models.Item.list({
         limit: 100,
+        selectionSet: itemSelectionSet,
       });
 
       if (response.errors?.length) {
@@ -727,10 +746,14 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
       }
 
       const payload = toItemCreateInput(form, imageKeys, displayName);
-      const response = await client.models.Item.create({
-        id: itemId,
-        ...payload,
-      });
+      const response = await client.models.Item.create(
+        {
+          id: itemId,
+          ...payload,
+        },
+        // 생성 직후 낙관적 카드도 owner 를 갖도록 — isOwnItem 이 바로 정상 동작.
+        { selectionSet: itemSelectionSet },
+      );
 
       if (response.errors?.length) {
         throw new Error(response.errors.map((itemError) => itemError.message).join(', '));

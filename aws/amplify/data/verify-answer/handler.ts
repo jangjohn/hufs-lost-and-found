@@ -62,18 +62,24 @@ async function setVerificationAnswer(itemId: string, answer: string, userId: str
     return { success: false, remainingAttempts: MAX_ATTEMPTS, message: MESSAGES.empty };
   }
 
-  const itemResult = await client.models.Item.get({ id: itemId });
+  // owner 는 allow.owner() 의 암시적 필드라 model_introspection 에 없어 "기본 selection set 으로는 반환되지 않는다".
+  // 따라서 명시적 selectionSet 으로 owner 를 요청해야 Lambda(IAM)가 owner 를 받아 본인 글인지 검증할 수 있다.
+  // (이게 빠지면 owner='' → notOwner 가 항상 성립 → setVerificationAnswer 가 매번 실패한다.)
+  const itemResult = await client.models.Item.get({ id: itemId }, { selectionSet: ['id', 'owner'] });
   if (itemResult.errors?.length) {
     console.error(JSON.stringify({ op: 'setVerificationAnswer', itemId, stage: 'item-get', errors: itemResult.errors }));
     throw new Error(MESSAGES.notFound);
   }
   if (!itemResult.data) {
+    console.error(JSON.stringify({ op: 'setVerificationAnswer', itemId, stage: 'item-get', errors: 'no-data' }));
     throw new Error(MESSAGES.notFound);
   }
 
-  // 암시적 owner 필드(형식: `${sub}::${username}`)로 본인 글인지 확인.
+  // 암시적 owner 필드(형식: `${sub}::${username}` 또는 `${sub}`)로 본인 글인지 확인.
   const owner = (itemResult.data as { owner?: string | null }).owner ?? '';
   if (!owner.startsWith(userId)) {
+    // owner/sub 평문은 로그에 남기지 않는다 — 존재 여부와 매칭 여부만 기록.
+    console.error(JSON.stringify({ op: 'setVerificationAnswer', itemId, stage: 'owner-check', ownerPresent: Boolean(owner), match: false }));
     throw new Error(MESSAGES.notOwner);
   }
 
