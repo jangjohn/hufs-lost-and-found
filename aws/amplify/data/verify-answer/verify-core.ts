@@ -20,6 +20,7 @@ export const MESSAGES = {
   unconfigured: '이 게시글에는 아직 인증 정보가 없습니다.',
   locked: '인증 시도 횟수(3회)를 초과했습니다.',
   saved: '본인 확인 정답이 저장되었습니다.',
+  saveFailed: '본인 확인 정답 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
   success: '인증에 성공했습니다.',
 } as const;
 

@@ -1587,6 +1587,41 @@ select.input {
   transform: translateX(-50%) translateY(0);
 }
 
+/* verify-answer 재시도 배너 — 게시글은 등록됐지만 본인 확인 답변 저장이 실패했을 때 상주 표시(자동 사라지지 않음) */
+.verify-retry-banner {
+  position: fixed;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(560px, calc(100vw - 24px));
+  border: 1.5px solid color-mix(in srgb, var(--error) 45%, var(--line));
+  background: var(--error-bg);
+  color: var(--error-ink);
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  box-shadow: var(--sh-pop);
+  z-index: 130;
+}
+.verify-retry-banner .ic {
+  width: 17px;
+  height: 17px;
+  color: var(--error);
+  flex: 0 0 auto;
+}
+.verify-retry-banner .vrb-msg {
+  flex: 1 1 auto;
+}
+.verify-retry-banner .btn,
+.verify-retry-banner .icon-btn {
+  flex: 0 0 auto;
+}
+
 /* workspace footer */
 .workspace-footer {
   border-top: var(--hair);

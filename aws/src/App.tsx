@@ -550,6 +550,9 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
   const [claiming, setClaiming] = useState(false);
   const [claimResult, setClaimResult] = useState<{ success: boolean; remainingAttempts: number; message: string } | null>(null);
   const [claimError, setClaimError] = useState('');
+  // 게시글은 등록됐지만 본인 확인 답변 저장이 실패한 경우 — 같은 itemId 로 재시도(재등록 아님).
+  const [pendingAnswer, setPendingAnswer] = useState<{ itemId: string; answer: string; typeLabel: string } | null>(null);
+  const [retryingAnswer, setRetryingAnswer] = useState(false);
 
   const displayName = ownerLabel(user, attributes);
   const avatarInitial = displayName.trim().charAt(0).toUpperCase() || '?';
@@ -561,6 +564,33 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 2200);
   }, []);
+
+  // setVerificationAnswer 호출 — GraphQL 에러가 없고 서버가 success:true 를 돌려준 경우에만 성공으로 판단한다.
+  // (errors 만 확인하면 서버의 success:false 응답을 성공으로 오인하던 기존 버그를 막는다.)
+  const persistVerificationAnswer = useCallback(async (itemId: string, answer: string): Promise<boolean> => {
+    if (!client) return false;
+    try {
+      const verificationResponse = await client.mutations.setVerificationAnswer({ itemId, answer });
+      return !verificationResponse.errors?.length && verificationResponse.data?.success === true;
+    } catch (verificationError) {
+      console.warn('Failed to store verification answer:', verificationError);
+      return false;
+    }
+  }, []);
+
+  // 답변 저장 실패 시 — 게시글은 그대로 두고 같은 itemId 에 대해 답변만 재시도(재등록 금지 → 중복 글 방지).
+  const retrySaveAnswer = useCallback(async () => {
+    if (!pendingAnswer || retryingAnswer) return;
+    setRetryingAnswer(true);
+    const saved = await persistVerificationAnswer(pendingAnswer.itemId, pendingAnswer.answer);
+    setRetryingAnswer(false);
+    if (saved) {
+      setPendingAnswer(null);
+      showToast(`${pendingAnswer.typeLabel} 게시글의 본인 확인 답변이 저장되었어요.`);
+    } else {
+      showToast('본인 확인 답변 저장에 다시 실패했어요. 잠시 후 다시 시도해 주세요.');
+    }
+  }, [pendingAnswer, retryingAnswer, persistVerificationAnswer, showToast]);
 
   useEffect(() => {
     return () => {
@@ -720,22 +750,20 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
             createdAt: new Date().toISOString(),
           });
 
+      // 게시글은 등록됨 — 목록 반영 + 폼/모달 정리.
       setItems((currentItems) => [createdItem, ...currentItems]);
       setForm(createDefaultForm());
       setImageFiles([]);
       setFileInputKey((currentKey) => currentKey + 1);
       setModalOpen(false);
-      showToast(`${typeLabels[createdItem.type]} 게시글이 등록되었어요.`);
 
-      // 정답 해시는 서버(owner 전용 mutation)에서 계산·저장. 실패해도 게시글은 등록됨 — 경고만 표시.
-      try {
-        const verificationResponse = await client.mutations.setVerificationAnswer({ itemId, answer });
-        if (verificationResponse.errors?.length) {
-          throw new Error(verificationResponse.errors.map((itemError) => itemError.message).join(', '));
-        }
-      } catch (verificationError) {
-        console.warn('Failed to store verification answer:', verificationError);
-        showToast('본인 확인 답변 저장에 실패했어요. 게시글을 다시 등록해 주세요.');
+      // 정답 해시는 서버(owner 전용 mutation)에서 계산·저장.
+      // 저장이 "성공으로 확인된" 뒤에만 성공 토스트를 띄운다. 실패하면 같은 itemId 로 재시도(재등록 금지).
+      const saved = await persistVerificationAnswer(itemId, answer);
+      if (saved) {
+        showToast(`${typeLabels[createdItem.type]} 게시글이 등록되었어요.`);
+      } else {
+        setPendingAnswer({ itemId, answer, typeLabel: typeLabels[createdItem.type] });
       }
     } catch (nextError) {
       setError(toMessage(nextError));
@@ -1380,6 +1408,28 @@ function AuthenticatedApp({ signOut, user }: { signOut?: () => void; user: AuthU
               )}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {/* 본인 확인 답변 저장 실패 — 상주 배너(자동 사라지지 않음). 같은 글에 답변만 재시도, 재등록 아님. */}
+      {pendingAnswer ? (
+        <div className="verify-retry-banner" role="alert">
+          <IcInfo />
+          <span className="vrb-msg">
+            게시글은 등록됐지만 <b>본인 확인 답변이 저장되지 않았어요.</b> 답변을 저장해야 다른 사용자가 본인 확인을 할 수
+            있어요.
+          </span>
+          <button
+            className="btn btn-primary btn-sm"
+            type="button"
+            onClick={() => void retrySaveAnswer()}
+            disabled={retryingAnswer}
+          >
+            {retryingAnswer ? '저장 중...' : '답변 다시 저장'}
+          </button>
+          <button className="icon-btn" type="button" onClick={() => setPendingAnswer(null)} aria-label="닫기">
+            <IcClose />
+          </button>
         </div>
       ) : null}
 

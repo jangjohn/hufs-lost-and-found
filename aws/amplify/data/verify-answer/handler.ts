@@ -63,6 +63,10 @@ async function setVerificationAnswer(itemId: string, answer: string, userId: str
   }
 
   const itemResult = await client.models.Item.get({ id: itemId });
+  if (itemResult.errors?.length) {
+    console.error(JSON.stringify({ op: 'setVerificationAnswer', itemId, stage: 'item-get', errors: itemResult.errors }));
+    throw new Error(MESSAGES.notFound);
+  }
   if (!itemResult.data) {
     throw new Error(MESSAGES.notFound);
   }
@@ -76,14 +80,32 @@ async function setVerificationAnswer(itemId: string, answer: string, userId: str
   const salt = createSalt();
   const answerHash = hashAnswer(answer, salt);
 
+  // 기존 secret 조회 — 조회 자체가 실패하면(권한/일시오류) 무턱대고 create 로 넘어가지 않는다.
   const existing = await client.models.VerificationSecret.get({ itemId });
-  if (existing.data) {
-    await client.models.VerificationSecret.update({ itemId, answerHash, salt });
-  } else {
-    await client.models.VerificationSecret.create({ itemId, answerHash, salt });
+  if (existing.errors?.length) {
+    console.error(JSON.stringify({ op: 'setVerificationAnswer', itemId, stage: 'secret-get', errors: existing.errors }));
+    return { success: false, remainingAttempts: MAX_ATTEMPTS, message: MESSAGES.saveFailed };
   }
 
-  // 해시/salt 는 절대 반환하지 않음.
+  // 발행/갱신. write 응답 데이터로 회독(read-back) — 별도 get 은 DynamoDB 최종 일관성으로 거짓 실패 위험이 있어 사용 안 함.
+  const writeResult = existing.data
+    ? await client.models.VerificationSecret.update({ itemId, answerHash, salt })
+    : await client.models.VerificationSecret.create({ itemId, answerHash, salt });
+
+  if (writeResult.errors?.length || writeResult.data?.answerHash !== answerHash) {
+    console.error(
+      JSON.stringify({
+        op: 'setVerificationAnswer',
+        itemId,
+        stage: existing.data ? 'secret-update' : 'secret-create',
+        errors: writeResult.errors ?? 'no-data-or-hash-mismatch',
+      }),
+    );
+    return { success: false, remainingAttempts: MAX_ATTEMPTS, message: MESSAGES.saveFailed };
+  }
+
+  // 민감정보(해시/salt)는 로그·응답에 절대 포함하지 않음 — 성공 여부만 기록.
+  console.log(JSON.stringify({ op: 'setVerificationAnswer', itemId, success: true }));
   return { success: true, remainingAttempts: MAX_ATTEMPTS, message: MESSAGES.saved };
 }
 
